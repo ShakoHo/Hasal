@@ -8,7 +8,6 @@ pyperclip>=1.5.27
 web.py>=0.38
 docopt==0.6.2
 pyssim==0.3
-APScheduler==3.0.3
 argparse==1.2.1
 watchdog==0.8.3
 peakutils==1.0.3
@@ -16,11 +15,13 @@ treeherder-client==3.1.0
 selenium==3.0.2
 jsonschema==2.6.0
 geckoprofiler_controller==0.0.4
-matplotlib==1.5.3
-ipython==5.3.0
-pandas>=0.19.2
-runipy==0.1.5
 
 python-dateutil
 keyring
 requests
+
+# import ipynb related packages, remove it after we remove related imported packages from Hasal
+-r requirements_ipynb.txt
+
+# When we replace the old agent by ejenti, then we can remove following package
+APScheduler==3.3.1

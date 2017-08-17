@@ -1,0 +1,4 @@
+matplotlib==1.5.3
+ipython==5.3.0
+pandas>=0.19.2
+runipy==0.1.5
