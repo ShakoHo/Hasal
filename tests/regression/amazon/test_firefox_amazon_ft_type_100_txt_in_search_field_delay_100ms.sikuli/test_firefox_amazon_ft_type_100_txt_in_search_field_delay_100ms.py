@@ -9,7 +9,6 @@ import common
 import basecase
 import amazon
 
-import string
 import shutil
 import browser
 import time

@@ -9,7 +9,6 @@ import common
 import basecase
 import facebook
 
-import string
 import shutil
 import browser
 import time
