@@ -49,7 +49,7 @@ class Case(basecase.SikuliInputLatencyCase):
 
         _, obj = app.wait_for_customer_text_loaded()
         # product thumbnail list region
-        compare_area = Region(obj.x, obj.y, obj.w + 850, obj.h + 250)
+        compare_area = self.tuning_region(obj, w_offset=850, h_offset=250)
         self.set_override_region_settings(customized_region_name, compare_area)
         sleep(2)
 
