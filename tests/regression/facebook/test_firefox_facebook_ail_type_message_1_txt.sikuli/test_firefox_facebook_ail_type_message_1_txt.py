@@ -44,7 +44,33 @@ class Case(basecase.SikuliInputLatencyCase):
         type_area_component = [
             ['facebook_type_message_win.png', 0, 0],
         ]
-        type_area = self.find_match_region(type_area_component, similarity=0.80)
+
+        # Getting the Type Area Region from Like Btn.
+        #
+        # X = 0 (offset = "-btn.x")
+        # <==============================>
+        # -------------------------------------  ^ Y offset = -30
+        # | Write a reply ...                 |  |
+        # |                                   |  | H offset = +30
+        # | O T H E R B T N               Btn |  |
+        # -------------------------------------  v
+        #
+        # or
+        #
+        # X = 0 (offset = "-btn.x")
+        # <==========================================>
+        # --------------------------------------------------  ^ Y offset = -30
+        # |              Some messages                     |  |
+        # |------------------------------------------------|  | H offset = +30
+        # | Write a reply ...         O T H E R B T N  Btn |  |
+        # --------------------------------------------------  v
+
+        type_area_btn = self.find_match_region(type_area_component, similarity=0.80)
+        type_area = self.tuning_region(type_area_btn,
+                                       x_offset=-type_area_btn.x,
+                                       y_offset=-30,
+                                       w_offset=0,
+                                       h_offset=30)
         self.set_override_region_settings(customized_region_name, type_area)
 
         # Record T1, and capture the snapshot image
