@@ -14,10 +14,7 @@ treeherder-client==3.1.0
 selenium==3.0.2
 jsonschema==2.6.0
 geckoprofiler_controller==0.0.4
-
-python-dateutil
-keyring
-requests
+requests==2.18.4
 
 # When we remove related imported packages from Hasal, move following packages into other file
 matplotlib==1.5.3
