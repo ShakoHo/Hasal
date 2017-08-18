@@ -123,7 +123,10 @@ def download_from_remote_url_folder(dl_pkg_platform, remote_url_str, output_dp):
 def download_latest_nightly_build(**kwargs):
     """
     you can specify output_dp in task configs or after the cmd
-    @param kwargs: expect should contain queue_msg and consumer_config two keys
+    @param kwargs:
+
+        kwargs['cmd_obj']['configs']['DOWNLOAD_PKG_OUTPUT_DP'] :: the path where your downloaded firefox package want to store, default: current dir
+
     @return: json obj
     """
 
@@ -149,7 +152,7 @@ def download_latest_nightly_build(**kwargs):
     if len(cmd_parameter_list) == 2:
         output_dp = cmd_parameter_list[1]
     else:
-        output_dp = task_config.get("output_dp", os.getcwd())
+        output_dp = task_config.get("DOWNLOAD_PKG_OUTPUT_DP", os.getcwd())
     return_result['output_dp'] = output_dp
 
     # get download fx package local path and json path
@@ -250,6 +253,14 @@ def extract_fx_pkg(input_fx_pkg_fp, input_fx_extract_dir="firefox"):
 
 
 def deploy_fx_package(**kwargs):
+    """
+    deploy firefox package to system default path
+    @param kwargs:
+
+        kwargs['cmd_obj']['configs']['INPUT_FX_DL_PKG_PATH'] :: the firefox package path your want to deploy to system default path
+
+    @return:
+    """
 
     # get queue msg, consumer config from kwargs
     queue_msg, consumer_config, task_config = init_task(kwargs)
@@ -259,7 +270,7 @@ def deploy_fx_package(**kwargs):
     if len(cmd_parameter_list) == 2:
         fx_dl_pkg_path = cmd_parameter_list[1]
     else:
-        fx_dl_pkg_path = task_config.get("fx_dl_pkg_path", None)
+        fx_dl_pkg_path = task_config.get("INPUT_FX_DL_PKG_PATH", None)
 
     if fx_dl_pkg_path:
         if extract_fx_pkg(fx_dl_pkg_path):

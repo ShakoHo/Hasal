@@ -25,6 +25,15 @@ def get_remote_url_list(input_repo_path):
 
 
 def git_pull(**kwargs):
+    """
+    git pull cmd wrapper
+    @param kwargs:
+
+        kwargs['cmd_obj']['configs']['GIT_PULL_PARAMETER_REMOTE_URL'] :: remote url parameter
+        kwargs['cmd_obj']['configs']['GIT_PULL_PARAMETER_BRANCH_NAME'] :: branch name
+
+    @return:
+    """
     DEFAULT_GIT_CMD_PULL = ["git", "pull"]
 
     # get queue msg, consumer config from kwargs
@@ -43,8 +52,8 @@ def git_pull(**kwargs):
         remote_url = cmd_parameter_list[1]
         branch_name = cmd_parameter_list[2]
     else:
-        remote_url = task_config.get("remote_url", "")
-        branch_name = task_config.get("branch_name", "")
+        remote_url = task_config.get("GIT_PULL_PARAMETER_REMOTE_URL", "")
+        branch_name = task_config.get("GIT_PULL_PARAMETER_BRANCH_NAME", "")
 
     if remote_url == "" and branch_name == "":
         exec_cmd = DEFAULT_GIT_CMD_PULL
@@ -71,6 +80,14 @@ def git_pull(**kwargs):
 
 
 def git_checkout(**kwargs):
+    """
+    git checkout command wrapper
+    @param kwargs:
+
+        kwargs['cmd_obj']['configs']['GIT_CHECKOUT_PARAMETER_BRANCH_NAME'] :: branch name
+
+    @return:
+    """
     DEFAULT_GIT_CMD_CHECKOUT = ["git", "checkout"]
 
     # get queue msg, consumer config from kwargs
@@ -85,7 +102,7 @@ def git_checkout(**kwargs):
     if len(cmd_parameter_list) == 2:
         branch_name = cmd_parameter_list[1]
     else:
-        branch_name = task_config.get("branch_name", "")
+        branch_name = task_config.get("GIT_CHECKOUT_PARAMETER_BRANCH_NAME", "")
 
     if branch_name:
         exec_cmd = DEFAULT_GIT_CMD_CHECKOUT + [branch_name]
@@ -102,6 +119,14 @@ def git_checkout(**kwargs):
 
 
 def git_fetch(**kwargs):
+    """
+    git fetch command wrapper
+    @param kwargs:
+
+        kwargs['cmd_obj']['configs']['GIT_FETCH_PARAMETER_REMOTE_URL'] :: remote url
+
+    @return:
+    """
     DEFAULT_GIT_CMD_FETCH = ["git", "fetch"]
 
     # get queue msg, consumer config from kwargs
@@ -116,7 +141,7 @@ def git_fetch(**kwargs):
     if len(cmd_parameter_list) == 2:
         remote_url = cmd_parameter_list[1]
     else:
-        remote_url = task_config.get("remote_url", "")
+        remote_url = task_config.get("GIT_FETCH_PARAMETER_REMOTE_URL", "")
 
     if remote_url == "":
         exec_cmd = DEFAULT_GIT_CMD_FETCH
@@ -137,6 +162,11 @@ def git_fetch(**kwargs):
 
 
 def git_reset(**kwargs):
+    """
+    git reset command wrapper
+    @param kwargs:
+    @return:
+    """
     DEFAULT_GIT_CMD_RESET = ["git", "reset", "--hard", "HEAD"]
 
     # get queue msg, consumer config from kwargs

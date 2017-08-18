@@ -37,37 +37,15 @@ def generate_config_path_json_mapping(input_path, input_json_obj, output_result)
 
 
 def run_hasal_on_latest_nightly(**kwargs):
-    # download latest nightly build
-    pkg_download_info_json = download_latest_nightly_build(**kwargs)
-
-    # deploy fx
-    # specify firefox downloaded package path
-    kwargs['queue_msg']['cmd_obj']['configs']['fx_dl_pkg_path'] = pkg_download_info_json['FX-DL-PACKAGE-PATH']
-    if deploy_fx_package(**kwargs):
-
-        # generate hasal
-        meta_task_input_config = kwargs['queue_msg']['cmd_obj']['configs'].get("input_config", {})
-        auto_generate_config = {"configs": {"upload": {
-            "default.json": {"perfherder-revision": pkg_download_info_json['PERFHERDER-REVISION'],
-                             "perfherder-pkg-platform": pkg_download_info_json['PERFHERDER-PKG-PLATFORM']}}}}
-        merge_input_config = CommonUtil.deep_merge_dict(meta_task_input_config, auto_generate_config)
-        kwargs['queue_msg']['cmd_obj']['configs']['input_config'] = merge_input_config
-        ejenti_hasal_config = generate_hasal_config(**kwargs)
-
-        # exec hasal runtest
-        kwargs['queue_msg']['cmd_obj']['configs']['specify_config_settings'] = ejenti_hasal_config
-        exec_hasal_runtest(**kwargs)
-
-
-def generate_hasal_config(**kwargs):
     """
-    generate hasal config jsons for ejenti, default should generate agent/chrome/exec/firefox/global/index/online jsons
-    input_config example:
-    user
-    => exec=default, index=il
-    slack agent
-    =>
-    {
+    Combination task for daily nightly trigger test
+    @param kwargs:
+
+        kwargs['cmd_obj']['configs']['OVERWRITE_HASAL_SUITE_CASE_LIST'] :: the case list use for overwrite the current suite file, will generate a new suite file called ejenti.suite, ex:
+        tests.regression.gdoc.test_firefox_gdoc_read_basic_txt_1, tests.regression.gdoc.test_firefox_gdoc_read_basic_txt_2
+
+        kwargs['cmd_obj']['configs']['OVERWIRTE_HASAL_CONFIG_CTNT'] :: the ctnt use for overwrite the current config example as below:
+        {
         "configs": {
             "exec": {
                 "default.json": {
@@ -88,7 +66,96 @@ def generate_hasal_config(**kwargs):
             }
         }
     }
+
+    @return:
+    """
+    # download latest nightly build
+    pkg_download_info_json = download_latest_nightly_build(**kwargs)
+
+    # deploy fx
+    # specify firefox downloaded package path
+    kwargs['queue_msg']['cmd_obj']['configs']['fx_dl_pkg_path'] = pkg_download_info_json['FX-DL-PACKAGE-PATH']
+    if deploy_fx_package(**kwargs):
+
+        # generate hasal config, get the config from upper task and merge with info from nightly json info
+        meta_task_input_config = kwargs['queue_msg']['cmd_obj']['configs'].get("OVERWIRTE_HASAL_CONFIG_CTNT", {})
+        auto_generate_config = {"configs": {"upload": {"default.json": {"perfherder-revision": pkg_download_info_json['PERFHERDER-REVISION'],
+                                                                        "perfherder-pkg-platform": pkg_download_info_json['PERFHERDER-PKG-PLATFORM']}},
+                                            "exec": {"default.json": {"exec-suite-fp": generate_suite_file(**kwargs)}}}}
+        merge_input_config = CommonUtil.deep_merge_dict(meta_task_input_config, auto_generate_config)
+        kwargs['queue_msg']['cmd_obj']['configs']['OVERWIRTE_HASAL_CONFIG_CTNT'] = merge_input_config
+        ejenti_hasal_config = generate_hasal_config(**kwargs)
+
+        # exec hasal runtest
+        kwargs['queue_msg']['cmd_obj']['configs']['RUNTEST_CONFIG_PARAMETERS'] = ejenti_hasal_config
+        exec_hasal_runtest(**kwargs)
+
+
+def generate_suite_file(**kwargs):
+    """
+    task for generateing new suite file in Hasal working dir
+    @param kwargs:
+
+        kwargs['cmd_obj']['configs']['DEFAULT_GENERATED_SUITE_FN'] :: the new suite file name you are going to create
+        kwargs['cmd_obj']['configs']['OVERWRITE_HASAL_SUITE_CASE_LIST'] :: the case list for generating suite ex: tests.regression.gdoc.test_firefox_gdoc_read_basic_txt_1, tests.regression.gdoc.test_firefox_gdoc_read_basic_txt_2
+
+    @return:
+    """
+
+    DEFAULT_GENERATE_SUITE_FN = "ejenti.suite"
+    DEFAULT_SUITE_FN = "suite.txt"
+
+    # get queue msg, consumer config from kwargs
+    queue_msg, consumer_config, task_config = init_task(kwargs)
+
+    # get Hasal working dir path
+    hasal_working_dir = get_hasal_repo_path(task_config)
+
+    output_suite_fn = task_config.get("DEFAULT_GENERATED_SUITE_FN", DEFAULT_GENERATE_SUITE_FN)
+    default_suite_fp = os.path.join(hasal_working_dir, DEFAULT_SUITE_FN)
+    output_suite_fp = os.path.join(hasal_working_dir, output_suite_fn)
+    case_list_str = task_config.get('OVERWRITE_HASAL_SUITE_CASE_LIST', None)
+    if case_list_str:
+        case_list = case_list_str.split(",")
+    else:
+        with open(default_suite_fp) as fh:
+            case_list = fh.readlines()
+    with open(output_suite_fp, 'w') as write_fh:
+        for case_path in case_list:
+            write_fh.write(case_path.strip() + '\n')
+    return output_suite_fp
+
+
+def generate_hasal_config(**kwargs):
+    """
+    generate hasal config jsons for ejenti, default should generate agent/chrome/exec/firefox/global/index/online jsons
     @param kwargs: will have two keys queue_msg, consumer_config
+
+        kwargs['cmd_obj']['configs']['DEFAULT_HASAL_CONFIG_CONTENT_TEMPLATE'] :: default tempalate will use for generating config content
+        kwargs['cmd_obj']['configs']['DEFAULT_HASAL_RUNTEST_CMD_PARAMETERS_TEMPLATE'] :: default runtest exec parameters template
+        kwargs['cmd_obj']['configs']['OVERWIRTE_HASAL_CONFIG_CTNT'] :: the ctnt use for overwrite the current config example as below:
+        {
+        "configs": {
+            "exec": {
+                "default.json": {
+                    "key1": "value1"
+                }
+            },
+            "firefox": {
+                "default.json": {
+                    "key2": "value2",
+                    "key3": "value3"
+                    }
+            },
+            "online": {
+                "abc.json":{
+                    "key3": "value3",
+                    "key4": "value4"
+                    }
+            }
+        }
+    }
+
     @return:
     """
 
@@ -118,8 +185,8 @@ def generate_hasal_config(**kwargs):
     # get override config
     cmd_parameter_list = queue_msg.get('input_cmd_str', "").split(" ", 1)
 
-    default_config_settings = task_config.get("default_config_settings", DEFAULT_HASAL_CONFIG)
-    default_runtest_configs = task_config.get("default_runtest_configs", DEFAULT_HASAL_RUNTEST_CONFIGS)
+    default_config_settings = task_config.get("DEFAULT_HASAL_CONFIG_CONTENT_TEMPLATE", DEFAULT_HASAL_CONFIG)
+    default_runtest_configs = task_config.get("DEFAULT_HASAL_RUNTEST_CMD_PARAMETERS_TEMPLATE", DEFAULT_HASAL_RUNTEST_CONFIGS)
 
     # get input config from user interactive mode
     if len(cmd_parameter_list) == 2:
@@ -128,7 +195,7 @@ def generate_hasal_config(**kwargs):
         input_json_obj = CommonUtil.load_json_string(input_json_str)
         logging.debug("load json obj from input cmd: [%s]" % input_json_obj)
     else:
-        input_json_obj = task_config.get("input_config", {})
+        input_json_obj = task_config.get("OVERWIRTE_HASAL_CONFIG_CTNT", {})
         logging.debug("load json obj from input config: [%s]" % input_json_obj)
 
     if len(input_json_obj.keys()) == 0:
@@ -162,6 +229,11 @@ def exec_hasal_runtest(**kwargs):
     """
     a wrapper to wrap the runtest cmd
     @param kwargs:
+
+        kwargs['cmd_obj']['configs']['DEFAULT_RUNTEST_CMD_FMT'] :: runtest cmd format, default: ["python", "runtest.py"]
+        kwargs['cmd_obj']['configs']['DEFAULT_RUNTEST_OUTPUT_LOG_FN'] :: runtest will redirect output to a physical log file, deafult will be: hasal_runtest.log
+        kwargs['cmd_obj']['configs']['RUNTEST_CONFIG_PARAMETERS'] :: runtest parameter config, ex: {'--index-config': "configs/index/inputlatencyxxxx.json", "--exec-config": "configs/exec/default.json"}
+
     @return:
     """
     DEFAULT_RUNTEST_CMD_FMT = ["python", "runtest.py"]
@@ -174,9 +246,9 @@ def exec_hasal_runtest(**kwargs):
     cmd_parameter_list = parse_cmd_parameters(queue_msg)
 
     # get setting from task config
-    default_cmd_fmt = task_config.get("default_cmd_fmt", DEFAULT_RUNTEST_CMD_FMT)
-    default_log_fn = task_config.get("default_log_fn", DEFAULT_JOB_LOG_FN)
-    specify_config_settings = task_config.get("specify_config_settings", {})
+    default_cmd_fmt = task_config.get("DEFAULT_RUNTEST_CMD_FMT", DEFAULT_RUNTEST_CMD_FMT)
+    default_log_fn = task_config.get("DEFAULT_RUNTEST_OUTPUT_LOG_FN", DEFAULT_JOB_LOG_FN)
+    specify_config_settings = task_config.get("RUNTEST_CONFIG_PARAMETERS", {})
     workding_dir = get_hasal_repo_path(task_config)
     exec_cmd_list = copy.deepcopy(default_cmd_fmt)
 
