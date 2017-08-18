@@ -51,8 +51,9 @@ class Case(basecase.SikuliInputLatencyCase):
         t1 = time.time()
         capimg1 = capture(0, 0, capture_width, capture_height)
 
-        char_len = 100
-        char_str = (string.ascii_lowercase * (char_len / 26 + 1))[:char_len]
+        # Reference from https://en.wikipedia.org/wiki/Lorem_ipsum
+        # extract 100 chars from Lorem ipsum text and filter characters which will affect result, e.g., i, j, and l
+        char_str = "orempsumdorstametconsecteturadpscngetsedoeusmodtemporncduntutaboretdoremagnaquatenmadmnvenamqusnoexe"
         com.system_print('Type char')
         com.delayed_type(char_str, 0.1, delay)
 

@@ -121,7 +121,6 @@ class General():
             win_ver = platform.platform().split("Windows_")[1].split("-")[0]
             if win_ver in default_windows_delay:
                 Settings.TypeDelay = sec - default_windows_delay[win_ver]
-                print "Current Key Delay: " + str(Settings.TypeDelay)
 
         type(text)
 
@@ -139,7 +138,6 @@ class General():
         # We set delay to 0.06 just to guarantee the typing is slow enough.
         # However, we should use find_key_type_delay() to get delay first
         type_delay = sec - delay
-        print "Current Key Delay: " + str(type_delay)
         Settings.TypeDelay = type_delay
 
         type(text)
