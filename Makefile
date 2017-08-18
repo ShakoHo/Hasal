@@ -1,12 +1,15 @@
 PYTHON := python
-VENV := ~/.hasalenv
+VENV := ./env-python-dev
 
 $(VENV)/bin/python:
 	[ -d $(VENV) ] || $(PYTHON) -m virtualenv $(VENV) || virtualenv $(VENV)
 	$(VENV)/bin/pip install --upgrade setuptools pip
+
+	# For bugzilla
 	$(VENV)/bin/pip install -U -e git+git://github.com/jbalogh/check.git#egg=check
 	$(VENV)/bin/pip install -U -e git+git://github.com/askeing/remoteobjects.git#egg=remoteobjects
 	$(VENV)/bin/pip install -U -e git+git://github.com/askeing/bztools.git#egg=bztools
+
 	$(VENV)/bin/pip install -Ur requirements.txt
 	$(VENV)/bin/python setup.py develop
 
@@ -17,7 +20,7 @@ dev-env: $(VENV)/bin/python
 
 # for testing
 .PHONY: test
-test: dev-env
+test:
 	./mach test-config
 	./mach test-tidy --no-progress --all
 
@@ -42,16 +45,16 @@ video-recording-libs-install:
 
 venv-install:
 ifndef VIRTUAL_ENV
-	virtualenv venv
+	virtualenv $(VENV)
 endif
 
 cv2-install-venv:
-	cd env/lib/python2.7/site-packages
+	cd $(VENV)/lib/python2.7/site-packages
 	ln -s /usr/local/lib/python2.7/dist-packages/cv2.so cv2.so
 	cd ../../..
 
 pip-install:
-	source venv/bin/activate
+	source $(VENV)/bin/activate
 	pip install selenium
 	pip install numpy
 
