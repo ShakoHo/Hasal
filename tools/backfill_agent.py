@@ -14,12 +14,12 @@ Options:
 import os
 import csv
 import sys
-import time
 import json
 import random
 import platform
 import datetime
 import subprocess
+from dateutil import tz
 from docopt import docopt
 
 
@@ -39,30 +39,32 @@ csv_file = 'tmp.csv'
 backfill_json_template = os.path.join('tools', 'backfill_latest_template.json')
 backfill_json_run = os.path.join('tools', 'backfill_latest_run.json')
 backfill_python = os.path.join('tools', 'generate_data_for_nightly_build.py')
+from_zone = tz.tzutc()
+to_zone = tz.tzlocal()
 
-task_schedule = {
-    "amazon_ail_hover_related_product_thumbnail Median": ["0500", "1700"],
-    "amazon_ail_select_search_suggestion Median": ["0530", "1730"],
-    "amazon_ail_type_in_search_field Median": ["0600", "1800"],
-    "facebook_ail_click_close_chat_tab Median": ["0900", "2100"],
-    "facebook_ail_click_open_chat_tab Median": ["0830", "2030"],
-    "facebook_ail_click_open_chat_tab_emoji Median": ["0800", "2000"],
-    "facebook_ail_click_photo_viewer_right_arrow Median": ["0930", "2130"],
-    "facebook_ail_scroll_home_1_txt Median": ["1000", "2200"],
-    "facebook_ail_type_comment_1_txt Median": ["1030", "2230"],
-    "facebook_ail_type_composerbox_1_txt Median": ["1100", "2300"],
-    "facebook_ail_type_message_1_txt Median": ["1130", "2330"],
-    "gdoc_ail_pagedown_10_text Median": ["0430", "1630"],
-    "gmail_ail_compose_new_mail_via_keyboard Median": ["0330", "1530"],
-    "gmail_ail_open_mail Median": ["0200", "1400"],
-    "gmail_ail_reply_mail Median": ["0300", "1500"],
-    "gmail_ail_type_in_reply_field Median": ["0400", "1600"],
-    "gsearch_ail_select_image_cat Median": ["0630", "1830"],
-    "gsearch_ail_select_search_suggestion Median": ["0700", "1900"],
-    "gsearch_ail_type_searchbox Median": ["0730", "1930"],
-    "youtube_ail_select_search_suggestion Median": ["0000", "1200"],
-    "youtube_ail_type_in_search_field Median": ["0100", "1300"]
-}
+task_schedule = [
+    "amazon_ail_hover_related_product_thumbnail Median",
+    "amazon_ail_select_search_suggestion Median",
+    "amazon_ail_type_in_search_field Median",
+    "facebook_ail_click_close_chat_tab Median",
+    "facebook_ail_click_open_chat_tab Median",
+    "facebook_ail_click_open_chat_tab_emoji Median",
+    "facebook_ail_click_photo_viewer_right_arrow Median",
+    "facebook_ail_scroll_home_1_txt Median",
+    "facebook_ail_type_comment_1_txt Median",
+    "facebook_ail_type_composerbox_1_txt Median",
+    "facebook_ail_type_message_1_txt Median",
+    "gdoc_ail_pagedown_10_text Median",
+    "gmail_ail_compose_new_mail_via_keyboard Median",
+    "gmail_ail_open_mail Median",
+    "gmail_ail_reply_mail Median",
+    "gmail_ail_type_in_reply_field Median",
+    "gsearch_ail_select_image_cat Median",
+    "gsearch_ail_select_search_suggestion Median",
+    "gsearch_ail_type_searchbox Median",
+    "youtube_ail_select_search_suggestion Median",
+    "youtube_ail_type_in_search_field Median"
+]
 
 
 def create_csv(query_days):
@@ -101,7 +103,7 @@ class BFagent(object):
         self.dot_count = dict()
         for b in BROWSER_SET:
             self.dot_count[b] = {}
-            for s in task_schedule.keys():
+            for s in task_schedule:
                 self.dot_count[b][s] = 0
 
         # check current platform
@@ -118,7 +120,7 @@ class BFagent(object):
 
         # Counter must be set to 0 for next round
         for b in BROWSER_SET:
-            for s in task_schedule.keys():
+            for s in task_schedule:
                 self.dot_count[b][s] = 0
 
     def analyze_csv(self):
@@ -128,25 +130,29 @@ class BFagent(object):
                 _s = '{} {}'.format(row['suite_name'], row['_'])
                 _m = row['machine_platform']
                 _b = row['browser_type']
-                _d = row['date']
 
-                if row['suite_name'] == 'suite_name':
+                if _s not in task_schedule:
                     continue
                 elif _m != self.current_platform or _b not in BROWSER_SET:
                     continue
-                elif self.ref_date != _d:
+
+                # convert UTC to local time
+                _t = '{} {}'.format(row['date'], row['time'])
+                utc = datetime.datetime.strptime(_t, "%Y-%m-%d %H-%M-%S-000000")
+                utc = utc.replace(tzinfo=from_zone)
+                central = utc.astimezone(to_zone)
+                # _t = central.strftime("%Y-%m-%d %H-%M-%S-000000")
+                _d = central.strftime("%Y-%m-%d")
+
+                if self.ref_date != _d:
                     continue
                 else:
                     self.dot_count[_b][_s] += 1
-        os.remove(csv_file)
 
     def list_recover_data(self):
-        # check if need to recover
-        # TODO: assign different goal by time
-
-        # Every day must have 6 points
+        # There must be at least 6 points each day
         ref_count = 6
-        for s in task_schedule.keys():
+        for s in task_schedule:
             for b in BROWSER_SET:
                 __count = self.dot_count[b][s]
                 missing = ref_count - __count
@@ -167,15 +173,16 @@ class BFagent(object):
                         fout.write('\"{}\"'.format(refill_date))
 
                 elif '\"TEMPLATE\": \"ADD_SUITE_HERE\"' in line:
-                    # always random select 5 cases to run
-                    case_count = 5
-                    if case_count < len(self.backfill_list):
-                        ran_select = random.sample(self.backfill_list, case_count)
+                    # In latest mode, random select 5 cases to run.
+                    # In history mode, run all suite
+                    max_suite_num = 5
+                    if refill_date == 'latest':
+                        selected_suites = random.sample(self.backfill_list, max_suite_num)
                     else:
-                        ran_select = self.backfill_list
+                        selected_suites = self.backfill_list
 
                     i = 0
-                    for task in ran_select:
+                    for task in selected_suites:
                         i += 1
                         suite = task[1].split()[0]
                         app = task[1].split()[0].split('_')[0]
@@ -183,7 +190,7 @@ class BFagent(object):
                         output_row = '\"{}\": {{\"case_list":[\"tests.regression.{}.test_{}_{}\"],' \
                                      '\"perfherder-suitename\": \"{}\"}}'.format(suite, app, _b, suite, suite)
                         fout.write(output_row)
-                        if i != len(ran_select):
+                        if i != len(selected_suites):
                             # add comma except the last row
                             fout.write(',')
                 else:
@@ -204,6 +211,9 @@ class BFagent(object):
             self.create_json()
             run_backfill()
 
+        # Remove csv file when this round finished
+        os.remove(csv_file)
+
     def run_history(self, backfill_config):
         # load date config file
         with open(backfill_config) as fh:
@@ -213,20 +223,11 @@ class BFagent(object):
         # check all input are valid
         # TODO: add file checker
 
-        # Request perherder counts for k days
-        create_csv(len(self.history_dates))
+        # Assume back fill dates are in 3 months
+        create_csv(90)
 
-        self.reset_date_list_dict()
-
-        # random pick N days to back filled
-        rand_num = 1
-        if rand_num < len(self.history_dates):
-            rand_dates = random.sample(self.history_dates, rand_num)
-        else:
-            rand_dates = self.history_dates
-
-        # loop through all the dates pickeds
-        for nightly_build_link in rand_dates:
+        # loop through all the dates picked
+        for nightly_build_link in self.history_dates:
             date = nightly_build_link[8:18]
             # set ref_date to config file
             print "\n=======================\n" \
@@ -244,14 +245,8 @@ class BFagent(object):
                 self.create_json(nightly_build_link)
                 run_backfill()
 
-
-def wait_for_minutes(rest_minutes):
-    division = 3
-    print "Time to sleep"
-    interval = rest_minutes / division
-    for i in range(division):
-        print "{} mins left...".format(rest_minutes - i * interval)
-        time.sleep(60 * interval)
+        # Remove csv file when this round finished
+        os.remove(csv_file)
 
 
 def main():
@@ -263,12 +258,10 @@ def main():
         print "===============\n* Latest mode *\n==============="
         while True:
             agent.run(True)
-            wait_for_minutes(3)
     elif arguments['-i']:
         print "================\n* History mode *\n================"
         while True:
             agent.run_history(arguments['-i'])
-            wait_for_minutes(3)
     else:
         print "===============\n* Single mode *\n==============="
         agent.run(arguments['--query'])
