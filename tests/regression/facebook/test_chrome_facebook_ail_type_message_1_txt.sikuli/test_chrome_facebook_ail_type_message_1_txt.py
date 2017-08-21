@@ -69,7 +69,7 @@ class Case(basecase.SikuliInputLatencyCase):
         type_area = self.tuning_region(type_area_btn,
                                        x_offset=-type_area_btn.x,
                                        y_offset=-30,
-                                       w_offset=0,
+                                       w_offset=type_area_btn.x - type_area_btn.w,
                                        h_offset=30)
         self.set_override_region_settings(customized_region_name, type_area)
 
