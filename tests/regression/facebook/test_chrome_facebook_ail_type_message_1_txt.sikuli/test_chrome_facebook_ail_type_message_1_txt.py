@@ -66,11 +66,7 @@ class Case(basecase.SikuliInputLatencyCase):
         # --------------------------------------------------  v
 
         type_area_btn = self.find_match_region(type_area_component, similarity=0.80)
-        type_area = self.tuning_region(type_area_btn,
-                                       x_offset=-type_area_btn.x,
-                                       y_offset=-30,
-                                       w_offset=type_area_btn.x - type_area_btn.w,
-                                       h_offset=30)
+        type_area = self.tuning_region(type_area_btn, y_offset=-30)
         self.set_override_region_settings(customized_region_name, type_area)
 
         # Record T1, and capture the snapshot image
