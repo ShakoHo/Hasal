@@ -10,6 +10,9 @@ logger = get_logger(__name__)
 
 class PyDriveUtil(object):
 
+    KEY_MIME_TYPE = 'mimeType'
+    FOLDER_MIME_TYPE = 'application/vnd.google-apps.folder'
+
     def __init__(self, settings=None):
         if settings is None:
             settings = {"settings_file": None, "local_cred_file": "mycreds.txt"}
@@ -21,12 +24,30 @@ class PyDriveUtil(object):
                 "Your current working dir doesn't include the client certificate file [%s]. Please make sure firefox/chrome profile creation is turned off, online mode is disabled, and GSuite and FB cases are not test targets!" % settings['local_cred_file'])
 
     def get_file_object(self, folder_uri, file_name):
-        search_string = "'%s' in parents and trashed=false" % folder_uri
-        file_list = self.drive.ListFile({'q': search_string}).GetList()
+        file_list = self.get_file_list(folder_uri=folder_uri)
         for file_obj in file_list:
             if file_name in file_obj['title']:
                 return file_obj
         return None
+
+    def get_file_list(self, folder_uri):
+        search_string = "'%s' in parents and trashed=false" % folder_uri
+        return self.drive.ListFile({'q': search_string}).GetList()
+
+    def create_folder_object(self, parent_folder_uri, folder_name):
+        ret_obj = self.get_file_object(folder_uri=parent_folder_uri, file_name=folder_name)
+
+        # already has the folder
+        if ret_obj and ret_obj.get(self.KEY_MIME_TYPE) == self.FOLDER_MIME_TYPE:
+            return ret_obj
+        else:
+            folder_metadata = {
+                'title': folder_name,
+                'parents': [{'id': parent_folder_uri}],
+                'mimeType': 'application/vnd.google-apps.folder'}
+            file_obj = self.drive.CreateFile(folder_metadata)
+            file_obj.Upload()
+            return file_obj
 
     def update_file_content(self, folder_uri, file_name, content):
         file_obj = self.get_file_object(folder_uri, file_name)

@@ -4,6 +4,7 @@ import time
 import random
 import string
 import traceback
+from datetime import datetime
 from ..common.pyDriveUtil import PyDriveUtil
 from ..common.logConfig import get_logger
 from lib.helper.desktopHelper import get_browser_version
@@ -321,7 +322,7 @@ class PerfherderUploadDataGenerator(object):
 class VideoUploader(object):
     DEFAULT_UPLOAD_VIDEO_YAML_SETTING = "./mozhasalvideo.yaml"
     DEFAULT_UPLOAD_VIDEO_MYCRED_TXT = "./mycreds_mozhasalvideo.txt"
-    DEFAULT_UPLOAD_FOLDER_URI = "0B9g1GJPq5xo8Ry1jV0s3Y3F6ZFE"
+    DEFAULT_UPLOAD_FOLDER_URI = "0B9g1GJPq5xo8S0QwandkOGhnNUE"
 
     @staticmethod
     def upload_video(upload_video_fp):
@@ -330,8 +331,13 @@ class VideoUploader(object):
                                            "local_cred_file": VideoUploader.DEFAULT_UPLOAD_VIDEO_MYCRED_TXT})
         video_perview_url = ""
         if os.path.exists(upload_video_fp):
+            # generate folder of current month
+            upload_subfolder_name = datetime.now().strftime('%Y-%m')
+            upload_subfolder_obj = pyDriveObj.create_folder_object(VideoUploader.DEFAULT_UPLOAD_FOLDER_URI, upload_subfolder_name)
+
+            upload_folder_uri_id = upload_subfolder_obj.get('id', VideoUploader.DEFAULT_UPLOAD_FOLDER_URI)
             # upload to pydrive
-            upload_result = pyDriveObj.upload_file(VideoUploader.DEFAULT_UPLOAD_FOLDER_URI, upload_video_fp)
+            upload_result = pyDriveObj.upload_file(upload_folder_uri_id, upload_video_fp)
             if upload_result:
                 video_perview_url = "/".join(upload_result['alternateLink'].split("/")[:-1]) + "/preview"
             else:
