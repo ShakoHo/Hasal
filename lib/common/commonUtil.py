@@ -95,13 +95,27 @@ class StatusRecorder(object):
 
     def set_case_basic_info(self, case_name):
         current_time_stamp = datetime.strftime(datetime.now(), '%Y%m%d%H%M%S')
+        # reset case info, which contains case name and timestamp
         if self.DEFAULT_FIELD_CASE_INFO in self.current_data:
             self.current_data[self.DEFAULT_FIELD_CASE_INFO][self.DEFAULT_FIELD_CASE_NAME] = case_name
             self.current_data[self.DEFAULT_FIELD_CASE_INFO][self.DEFAULT_FIELD_CASE_TIME_STAMP] = current_time_stamp
         else:
             self.current_data[self.DEFAULT_FIELD_CASE_INFO] = {self.DEFAULT_FIELD_CASE_NAME: case_name, self.DEFAULT_FIELD_CASE_TIME_STAMP: current_time_stamp}
+        # dump to file
         with open(self.status_fp, "w+") as fh:
             json.dump(self.current_data, fh)
+        # re-load data
+        self.current_data = CommonUtil.load_json_file(self.status_fp)
+
+    def clean_legacy_status(self):
+        # reset current status
+        if self.DEFAULT_FIELD_CURRENT_STATUS in self.current_data:
+            self.current_data[self.DEFAULT_FIELD_CURRENT_STATUS] = {}
+        # dump to file
+        with open(self.status_fp, "w+") as fh:
+            json.dump(self.current_data, fh)
+        # re-load data
+        self.current_data = CommonUtil.load_json_file(self.status_fp)
 
     def get_current_sikuli_status(self):
         """

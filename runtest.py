@@ -351,6 +351,7 @@ class RunTest(object):
         while current_run < self.exec_config['max-run']:
             self.logger.info("The counter is %d and the retry counter is %d" % (current_run, current_retry))
             try:
+                objStatusRecorder.clean_legacy_status()
                 objStatusRecorder.record_case_exec_time_history(objStatusRecorder.STATUS_DESC_CASE_TOTAL_EXEC_TIME)
                 self.kill_legacy_process()
                 self.run_test(test_case_module_name, test_env)
