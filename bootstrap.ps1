@@ -110,13 +110,15 @@ If (Test-Path "C:\Program Files (x86)\obs-studio\bin\32bit\obs32.exe") {
 # installation of Hasal prerequisite
 $tmp = & CMD /C java -version >$null 2>&1
 If ($lastexitcode -notmatch 0) {
-    "[INFO] Installing Java 8 -version 8.0.121"
+    "[INFO] Installing Java 8 -version 8.0.144"
     choco install jre8
     If ($lastexitcode -notmatch 0) {
         "[ERROR] There were problems when installing jre8."
         Exit
     }
-    Add-EnvPath "C:\Program Files\Java\jre1.8.0_121\bin"
+    $jre8 = cver jre8 -localonly | findstr jre8
+    $version = $jre8.Split(' ')[1] -replace "(.*)\.(.*)", "`$1_`$2"
+    Add-EnvPath "C:\Program Files\Java\jre1.$version\bin"
 } Else {
     "[INFO] Java found in current system. Not going to install it."
 }
@@ -143,11 +145,20 @@ If ($lastexitcode -notmatch 0) {
         "[ERROR] There were problems when installing miniconda."
         Exit
     }
-    Add-EnvPath "C:\Program Files\Miniconda2\Scripts\"
-    Add-EnvPath "C:\Program Files\Miniconda2\"
 } Else {
     "[INFO] MiniConda found in current system. Not going to install it."
 }
+
+If (Test-Path C:\Miniconda2\) {
+    $CondaPath="C:\Miniconda2"
+} ElseIf (Test-Path "C:\Program Files\Miniconda2\") {
+    $CondaPath="C:\Program Files\Miniconda2"
+} Else {
+    $CondaPath="C:\ProgramData\Miniconda2"
+}
+
+Add-EnvPath "$CondaPath\Scripts\"
+Add-EnvPath "$CondaPath\"
 
 "[INFO] Downloading VCForPython27.msi"
 CMD /C curl -kLO https://download.microsoft.com/download/7/9/6/796EF2E4-801B-4FC4-AB28-B59FBF6D907B/VCForPython27.msi
@@ -212,25 +223,14 @@ conda create -q -n env-python python=2.7 numpy scipy nose pywin32 pip matplotlib
 Copy-Item C:\ProgramData\chocolatey\lib\sikulix\content\* .\thirdParty\
 Copy-Item .\scripts\runsikuli* .\thirdParty\
 
-If (Test-Path C:\Miniconda2\) {
-    CMD /C "C:\Miniconda2\envs\env-python\Scripts\pip" install mitmproxy
-    CMD /C "C:\Miniconda2\envs\env-python\Scripts\pip" install thirdParty\opencv_python-2.4.13-cp27-cp27m-win32.whl
-    CMD /C "C:\Miniconda2\envs\env-python\Scripts\pip" install thirdParty\opencv_python-2.4.13.2-cp27-cp27m-win_amd64.whl
-    CMD /C "C:\Miniconda2\envs\env-python\Scripts\pip" install -r requirements.txt
-    CMD /C "C:\Miniconda2\envs\env-python\Scripts\pip" install -r ejenti\requirements.txt
-    CMD /C certutil -p "" thirdParty\mitmproxy-ca-cert.p12
-    CMD /C "C:\Miniconda2\envs\env-python\python" setup.py install
-    CMD /C "C:\Miniconda2\envs\env-python\python" scripts\cv2_checker.py
-} Else {
-    CMD /C "C:\Program Files\Miniconda2\envs\env-python\Scripts\pip" install mitmproxy
-    CMD /C "C:\Program Files\Miniconda2\envs\env-python\Scripts\pip" install thirdParty\opencv_python-2.4.13-cp27-cp27m-win32.whl
-    CMD /C "C:\Program Files\Miniconda2\envs\env-python\Scripts\pip" install thirdParty\opencv_python-2.4.13.2-cp27-cp27m-win_amd64.whl
-    CMD /C "C:\Miniconda2\envs\env-python\Scripts\pip" install -r requirements.txt
-    CMD /C "C:\Miniconda2\envs\env-python\Scripts\pip" install -r ejenti\requirements.txt
-    CMD /C certutil -p "" thirdParty\mitmproxy-ca-cert.p12
-    CMD /C "C:\Program Files\Miniconda2\envs\env-python\python" setup.py install
-    CMD /C "C:\Program Files\Miniconda2\envs\env-python\python" scripts\cv2_checker.py
-}
+CMD /C "$CondaPath\envs\env-python\Scripts\pip" install mitmproxy
+CMD /C "$CondaPath\envs\env-python\Scripts\pip" install thirdParty\opencv_python-2.4.13-cp27-cp27m-win32.whl
+CMD /C "$CondaPath\envs\env-python\Scripts\pip" install thirdParty\opencv_python-2.4.13.2-cp27-cp27m-win_amd64.whl
+CMD /C "$CondaPath\envs\env-python\Scripts\pip" install -r requirements.txt
+CMD /C "$CondaPath\envs\env-python\Scripts\pip" install -r ejenti\requirements.txt
+CMD /C certutil -p "" thirdParty\mitmproxy-ca-cert.p12
+CMD /C "$CondaPath\envs\env-python\python" setup.py install
+CMD /C "$CondaPath\envs\env-python\python" scripts\cv2_checker.py
 
 
 ########################
