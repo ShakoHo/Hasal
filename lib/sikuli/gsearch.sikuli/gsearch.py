@@ -19,18 +19,19 @@ class Gsearch(WebApp):
 
     GSEARCH_HOMEPAGE_BUTTONS = [
         [os.path.join('pics', 'gsearch_homepage_buttons.png'), 0, 0],
-        [os.path.join('pics', 'gsearch_homepage_buttons_chrome_win10.png'), 0, 0]
+        [os.path.join('pics', 'gsearch_homepage_buttons_chrome_win10.png'), 0, 0],
+        [os.path.join('pics', 'gsearch_homepage_one_button_chrome_win10.png'), 0, 0]
     ]
 
     GSEARCH_FOCUS_SEARCH_INPUTBOX = [
         [os.path.join('pics', 'gsearch_homepage_buttons.png'), -7, -71],
-        [os.path.join('pics', 'gsearch_homepage_buttons_chrome_win10.png'), -7, -71]
+        [os.path.join('pics', 'gsearch_homepage_buttons_chrome_win10.png'), -7, -71],
+        [os.path.join('pics', 'gsearch_homepage_one_button_chrome_win10.png'), -7, -71]
     ]
 
     GSEARCH_MOZILLA_SUGGESTION = [
-        [os.path.join('pics', 'gsearch_search_result.png'), 0, 0],
-        [os.path.join('pics', 'gsearch_search_result_2.png'), 0, 0],
-        [os.path.join('pics', 'gsearch_search_result_3.png'), 0, 0]
+        [os.path.join('pics', 'gsearch_search_result_1.png'), 0, 0],
+        [os.path.join('pics', 'gsearch_search_result_2.png'), 0, 0]
     ]
 
     def wait_gsearch_loaded(self, similarity=0.70):
