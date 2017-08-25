@@ -176,7 +176,7 @@ class BFagent(object):
                     # In latest mode, random select 5 cases to run.
                     # In history mode, run all suite
                     max_suite_num = 5
-                    if refill_date == 'latest':
+                    if refill_date == 'latest' and len(self.backfill_list) > max_suite_num:
                         selected_suites = random.sample(self.backfill_list, max_suite_num)
                     else:
                         selected_suites = self.backfill_list
