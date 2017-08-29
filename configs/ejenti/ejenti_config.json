@@ -4,6 +4,8 @@
   "log_level": "debug",
   "log_filter": [
     "apscheduler.executors.default",
-    "apscheduler.scheduler"
+    "apscheduler.scheduler",
+    "requests.packages.gurllib3.connectionpool",
+    "urllib3.connectionpool"
   ]
 }

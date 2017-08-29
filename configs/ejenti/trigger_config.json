@@ -6,25 +6,69 @@
       "enable": false,
       "topic": "win7",
       "platform_build": "win64",
-      "interval_minutes": 10,
-      "amount": 1,
-      "cmd": "download-latest-nightly",
-      "configs": {}
+      "interval_minutes": 1,
+      "amount": 6,
+      "cmd": "run-hasal-on-latest-nightly",
+      "configs": {
+        "OVERWRITE_HASAL_SUITE_CASE_LIST": "tests.regression.gmail.test_firefox_gmail_ail_compose_new_mail_via_keyboard,tests.regression.gmail.test_chrome_gmail_ail_compose_new_mail_via_keyboard,tests.regression.gmail.test_firefox_gmail_ail_open_mail,tests.regression.gmail.test_chrome_gmail_ail_open_mail,tests.regression.gmail.test_firefox_gmail_ail_reply_mail,tests.regression.gmail.test_chrome_gmail_ail_reply_mail,tests.regression.gmail.test_firefox_gmail_ail_type_in_reply_field,tests.regression.gmail.test_chrome_gmail_ail_type_in_reply_field",
+        "OVERWIRTE_HASAL_CONFIG_CTNT": {
+          "configs": {
+            "firefox": {
+              "obs_on_windows.json": {}
+            },
+            "index": {
+              "inputLatencyAnimationDctGenerator.json": {}
+            },
+            "upload": {
+              "default.json": {
+                "enable": true,
+                "perfherder-protocol": "https",
+                "perfherder-host": "treeherder.allizom.org",
+                "perfherder-client-id": "",
+                "perfherder-secret": "",
+                "perfherder-repo": "mozilla-central"
+              }
+            }
+          }
+        }
+      }
     },
     "win10_x64": {
       "enable": false,
       "topic": "win10",
       "platform_build": "win64",
-      "interval_minutes": 10,
+      "interval_minutes": 1,
       "amount": 1,
-      "cmd": "download-latest-nightly",
-      "configs": {}
+      "cmd": "run-hasal-on-latest-nightly",
+      "configs": {
+        "OVERWRITE_HASAL_SUITE_CASE_LIST": "tests.regression.gmail.test_firefox_gmail_ail_compose_new_mail_via_keyboard,tests.regression.gmail.test_chrome_gmail_ail_compose_new_mail_via_keyboard,tests.regression.gmail.test_firefox_gmail_ail_open_mail,tests.regression.gmail.test_chrome_gmail_ail_open_mail,tests.regression.gmail.test_firefox_gmail_ail_reply_mail,tests.regression.gmail.test_chrome_gmail_ail_reply_mail,tests.regression.gmail.test_firefox_gmail_ail_type_in_reply_field,tests.regression.gmail.test_chrome_gmail_ail_type_in_reply_field",
+        "OVERWIRTE_HASAL_CONFIG_CTNT": {
+          "configs": {
+            "firefox": {
+              "obs_on_windows.json": {}
+            },
+            "index": {
+              "inputLatencyAnimationDctGenerator.json": {}
+            },
+            "upload": {
+              "default.json": {
+                "enable": true,
+                "perfherder-protocol": "https",
+                "perfherder-host": "treeherder.allizom.org",
+                "perfherder-client-id": "",
+                "perfherder-secret": "",
+                "perfherder-repo": "mozilla-central"
+              }
+            }
+          }
+        }
+      }
     },
     "mac": {
       "enable": false,
       "topic": "darwin",
       "platform_build": "mac",
-      "interval_minutes": 10,
+      "interval_minutes": 1,
       "amount": 1,
       "cmd": "download-latest-nightly",
       "configs": {}
@@ -32,6 +76,8 @@
   },
   "log_filter": [
     "apscheduler.executors.default",
-    "apscheduler.scheduler"
+    "apscheduler.scheduler",
+    "requests.packages.gurllib3.connectionpool",
+    "urllib3.connectionpool"
   ]
 }
