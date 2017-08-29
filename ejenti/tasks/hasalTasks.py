@@ -74,7 +74,7 @@ def run_hasal_on_latest_nightly(**kwargs):
 
     # deploy fx
     # specify firefox downloaded package path
-    kwargs['queue_msg']['cmd_obj']['configs']['fx_dl_pkg_path'] = pkg_download_info_json['FX-DL-PACKAGE-PATH']
+    kwargs['queue_msg']['cmd_obj']['configs']['INPUT_FX_DL_PKG_PATH'] = pkg_download_info_json['FX-DL-PACKAGE-PATH']
     if deploy_fx_package(**kwargs):
 
         # generate hasal config, get the config from upper task and merge with info from nightly json info
