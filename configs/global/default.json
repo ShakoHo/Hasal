@@ -54,8 +54,10 @@
     "gsheet-100r-number-utf8char-10tabs"                    : "1__DF-ilgSIhkQrotazWSQZvlOc3UBISCCaDNbxPLLN8",
     "gsheet-100r-different-color-10tabs"                    : "1CPBaq71I-8FoGsbC8VETFWZdS_FdVFYPA63Tn53Kuko",
     "gsheet-10page-number-enchar"                           : "1DhwFaB-HwIwBXqi5k20FrCyoRWXQzc8STkfAomaAgRQ",
+    "gsheet-empty-number-enchar-2tabs"                      : "1wdIgb4Svqx3Tj9ZyP8cQOwP9iph8tj_pMfD69aQQxus",
     "gslide-1-page-blank"                                   : "1wdPUMvSWJN8mJnMhcpJ8Q3vXTU6x2N3Mw3iAqHC8dhU",
     "gslide-1-page-text"                                    : "1LLMATDFqINPkhXAO4reEvewD6Yu8IxE_WCpKefFYvS0",
+    "gslide-2-page-text"                                    : "1wGKPLo8BECaQDXl4XUZxHjfI7RALeB9ZnvIPf8syqAo",
     "gslide-1-page-utf8-text"                               : "1tb7HxLXkwTt2-Bp3zrXQUbfoW8XAskq9aZrIfqZOYEY",
     "gslide-1-page-image-chart"                             : "1OHTiIuQypImqcrPrGyXi3B1afZ-m-5r4tdC-SjiaeeU",
     "gslide-1-page-table"                                   : "1VvEZ9DSIlbjXXXY01wAccMdaF2q9wA1Zx21-nuH3KQc",
@@ -78,6 +80,9 @@
   },
   "youtube": {
     "test-url"                                              : "https://www.youtube.com/?hl=en&gl=US"
+  },
+  "outlook": {
+    "test-url"                                              : "https://outlook-sdf.office.com/owa/?realm=outlookwebtest.onmicrosoft.com"
   },
   "yahoo":{
     "mail-url"                                              : "https://mg.mail.yahoo.com"

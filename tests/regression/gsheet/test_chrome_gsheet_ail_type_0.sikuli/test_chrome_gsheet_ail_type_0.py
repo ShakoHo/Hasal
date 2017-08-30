@@ -19,35 +19,56 @@ class Case(basecase.SikuliInputLatencyCase):
     def run(self):
         # Disable Sikuli action and info log
         com = common.General()
-        com.infolog_enable(0)
+        com.infolog_enable(False)
+        com.set_mouse_delay(0)
 
-        chrome = browser.Chrome()
-        gs = gsheet.gSheet()
-        chrome.clickBar()
-        chrome.enterLink(self.INPUT_TEST_TARGET)
-        gs.wait_for_loaded()
-
-        setAutoWaitTimeout(10)
-        sample1_fp = os.path.join(self.INPUT_IMG_SAMPLE_DIR_PATH, self.INPUT_IMG_OUTPUT_SAMPLE_1_NAME)
-
-        sleep(5)
-        click(gs.gsheet_1st_cell)
-        sleep(2)
+        # Prepare
+        app = gsheet.gSheet()
+        sample1_file_path = os.path.join(self.INPUT_IMG_SAMPLE_DIR_PATH, self.INPUT_IMG_OUTPUT_SAMPLE_1_NAME)
+        sample1_file_path = sample1_file_path.replace(os.path.splitext(sample1_file_path)[1], '.png')
         capture_width = int(self.INPUT_RECORD_WIDTH)
         capture_height = int(self.INPUT_RECORD_HEIGHT)
 
-        t1 = time.time()
-        capimg2 = capture(0, 0, capture_width, capture_height)
+        # Launch browser
+        my_browser = browser.Chrome()
 
-        com.system_print('[log]  TYPE "9"')
-        type('9')
-        # In normal condition, a should appear within 100ms, but if lag happened, that could lead the show up after 100 ms, and that will cause the calculation of AIL much smaller than expected.
+        # Access link and wait
+        my_browser.clickBar()
+        my_browser.enterLink(self.INPUT_TEST_TARGET)
+        app.wait_for_loaded()
+
+        # Wait for stable
+        sleep(2)
+
+        # PRE ACTIONS
+        app.click_1st_cell()
+        sleep(1)
+
+        # Customized Region
+        customized_region_name = 'end'
+        type_area = self.find_match_region(app.GSHEET_COLUMN_HEADER, similarity=0.75)
+        modified_area = self.tuning_region(type_area, x_offset=-10, w_offset=60, h_offset=90)
+        self.set_override_region_settings(customized_region_name, modified_area)
+
+        # Record T1, and capture the snapshot image
+        # Input Latency Action
+        screenshot, t1 = app.il_type('9', capture_width, capture_height)
+
+        # In normal condition, a should appear within 100ms,
+        # but if lag happened, that could lead the show up after 100 ms,
+        # and that will cause the calculation of AIL much smaller than expected.
         sleep(0.1)
 
+        # Record T2
         t2 = time.time()
-        com.updateJson({'t1': t1, 't2': t2}, self.INPUT_TIMESTAMP_FILE_PATH)
-        shutil.move(capimg2, sample1_fp.replace(os.path.splitext(sample1_fp)[1], '.png'))
 
+        # POST ACTIONS
+
+        # Write timestamp
+        com.updateJson({'t1': t1, 't2': t2}, self.INPUT_TIMESTAMP_FILE_PATH)
+
+        # Write the snapshot image
+        shutil.move(screenshot, sample1_file_path)
 
 case = Case(sys.argv)
 case.run()

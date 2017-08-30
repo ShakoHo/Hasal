@@ -41,18 +41,16 @@ class Case(basecase.SikuliInputLatencyCase):
         sleep(2)
 
         # PRE ACTIONS
-        app.click_1st_cell()
-        sleep(1)
 
         # Customized Region
         customized_region_name = 'end'
-        type_area = self.find_match_region(app.GSHEET_COLUMN_HEADER, similarity=0.75)
-        modified_area = self.tuning_region(type_area, x_offset=-10, w_offset=60, h_offset=90)
+        type_area = self.find_match_region(app.GSHEET_TAB_IDENTIFIER, similarity=0.75)
+        modified_area = self.tuning_region(type_area, x_offset=-70, y_offset=-50, w_offset=200, h_offset=50)
         self.set_override_region_settings(customized_region_name, modified_area)
 
         # Record T1, and capture the snapshot image
         # Input Latency Action
-        screenshot, t1 = app.il_type('9', capture_width, capture_height)
+        loc, screenshot, t1 = app.click_2nd_tab(capture_width, capture_height)
 
         # In normal condition, a should appear within 100ms,
         # but if lag happened, that could lead the show up after 100 ms,

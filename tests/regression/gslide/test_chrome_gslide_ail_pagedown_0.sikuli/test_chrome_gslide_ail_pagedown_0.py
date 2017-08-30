@@ -7,7 +7,7 @@ sys.path.append(INPUT_LIB_PATH)
 import os
 import common
 import basecase
-import gsheet
+import gslide
 
 import shutil
 import browser
@@ -23,14 +23,14 @@ class Case(basecase.SikuliInputLatencyCase):
         com.set_mouse_delay(0)
 
         # Prepare
-        app = gsheet.gSheet()
+        app = gslide.gSlide()
         sample1_file_path = os.path.join(self.INPUT_IMG_SAMPLE_DIR_PATH, self.INPUT_IMG_OUTPUT_SAMPLE_1_NAME)
         sample1_file_path = sample1_file_path.replace(os.path.splitext(sample1_file_path)[1], '.png')
         capture_width = int(self.INPUT_RECORD_WIDTH)
         capture_height = int(self.INPUT_RECORD_HEIGHT)
 
         # Launch browser
-        my_browser = browser.Firefox()
+        my_browser = browser.Chrome()
 
         # Access link and wait
         my_browser.clickBar()
@@ -41,18 +41,17 @@ class Case(basecase.SikuliInputLatencyCase):
         sleep(2)
 
         # PRE ACTIONS
-        app.click_1st_cell()
-        sleep(1)
 
         # Customized Region
         customized_region_name = 'end'
-        type_area = self.find_match_region(app.GSHEET_COLUMN_HEADER, similarity=0.75)
-        modified_area = self.tuning_region(type_area, x_offset=-10, w_offset=60, h_offset=90)
+        type_area = self.find_match_region(app.GSLIDE_TXT_IMG_SHAPE_ICON, similarity=0.75)
+        modified_area = self.tuning_region(type_area, x_offset=-200, w_offset=200, h_offset=250)
         self.set_override_region_settings(customized_region_name, modified_area)
 
         # Record T1, and capture the snapshot image
         # Input Latency Action
-        screenshot, t1 = app.il_type('9', capture_width, capture_height)
+
+        screenshot, t1 = app.il_key_type(Key.PAGE_DOWN, "[log]  Click Page Down", capture_width, capture_height)
 
         # In normal condition, a should appear within 100ms,
         # but if lag happened, that could lead the show up after 100 ms,

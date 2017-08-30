@@ -1,35 +1,61 @@
+import os
 from sikuli import *  # NOQA
-import common
+from common import WebApp
 
 
-class gSheet():
-    def __init__(self):
-        self.common = common.General()
-        self.os = str(
-            Env.getOS())  # Using Env because of sikuli issue from https://bugs.launchpad.net/sikuli/+bug/1514007
+class gSheet(WebApp):
+    """
+                The GSheet library for Sikuli cases.
+                The component structure:
+                    <COMPONENT-NAME> = [
+                        [<COMPONENT-IMAGE-PLATFORM-FOO>, <OFFSET-X>, <OFFSET-Y>],
+                        [<COMPONENT-IMAGE-PLATFORM-BAR>, <OFFSET-X>, <OFFSET-Y>]
+                    ]
+    """
+    GSHEET_TAB_ICON = [
+        [os.path.join('pics', 'gsheet.png'), 0, 0]
+    ]
 
-        if self.os.lower() == 'mac':
-            self.control = Key.CMD
-        else:
-            self.control = Key.CTRL
-            self.alt = Key.ALT
+    GSHEET_MODIFY_HIGHLIGHT_CELL = [
+        [os.path.join('pics', 'column_header.png'), 450, 180]
+    ]
 
-        self.gsheet_tab_icon = Pattern("pics/gsheet.png").similar(0.70)
-        self.gsheet_modify_highlight_cell = Pattern("pics/column_header.png").similar(0.70).targetOffset(450, 180)
-        self.gsheet_delete_highlight_cell = Pattern("pics/column_header.png").similar(0.70).targetOffset(450, 180)
-        self.gsheet_highlight_tab = Pattern("pics/highlight_tab.png").similar(0.70).targetOffset(160, 0)
-        self.gsheet_column_header = Pattern("pics/column_header.png").similar(0.70).targetOffset(0, 60)
-        self.gsheet_1st_cell = Pattern("pics/column_header.png").similar(0.70).targetOffset(0, 80)
+    GSHEET_DELETE_HIGHLIGHT_CELL = [
+        [os.path.join('pics', 'column_header.png'), 450, 180]
+    ]
 
-    def wait_for_loaded(self):
-        wait(self.gsheet_tab_icon, 10)
+    GSHEET_HIGHLIGHT_TAB = [
+        [os.path.join('pics', 'highlight_tab.png'), 160, 0]
+    ]
+
+    GSHEET_MOVE_TO_HIGHLIGHT_SCROLL_CELL = [
+        [os.path.join('pics', 'column_header.png'), 0, 60]
+    ]
+
+    GSHEET_COLUMN_HEADER = [
+        [os.path.join('pics', 'column_header.png'), 0, 0]
+    ]
+
+    GSHEET_1ST_CELL = [
+        [os.path.join('pics', 'column_header.png'), 0, 80]
+    ]
+
+    GSHEET_TAB_IDENTIFIER = [
+        [os.path.join('pics', 'highlight_tab.png'), 0, 0]
+    ]
+
+    def wait_for_loaded(self, similarity=0.70):
+        return self._wait_for_loaded(component=gSheet.GSHEET_TAB_ICON, similarity=similarity, timeout=60)
+
+    def click_1st_cell(self):
+        self._click(action_name='Click 1st cell', component=gSheet.GSHEET_1ST_CELL)
 
     def modify_highlight_cell(self, input_txt):
-        click(self.gsheet_modify_highlight_cell)
+        self._click(action_name='Click highlight cell', component=gSheet.GSHEET_MODIFY_HIGHLIGHT_CELL)
         paste(input_txt)
 
     def delete_highlight_cell(self):
-        click(self.gsheet_delete_highlight_cell)
+        self._click(action_name='Click highlight cell', component=gSheet.GSHEET_DELETE_HIGHLIGHT_CELL)
         type(Key.DELETE)
 
     def delete_all_cell(self):
@@ -37,15 +63,17 @@ class gSheet():
         type(Key.DELETE)
 
     def click_highlight_tab(self):
-        click(self.gsheet_highlight_tab)
+        self._click(action_name='Click highlight tab', component=gSheet.GSHEET_HIGHLIGHT_TAB)
 
     def move_to_highlight_scroll(self, input_direction, scroll_down_size):
-        if self.os.lower() == 'mac':
-            if input_direction == WHEEL_DOWN:
-                direction = WHEEL_UP
-            else:
-                direction = WHEEL_DOWN
-        else:
-            direction = input_direction
-        mouseMove(self.gsheet_column_header)
-        wheel(self.gsheet_column_header, direction, scroll_down_size)
+        self._mouseMove(action_name='Mouse move to component', component=gSheet.GSHEET_MOVE_TO_HIGHLIGHT_SCROLL_CELL,
+                        similarity=0.70)
+        self._wheel(action_name='Wheel mouse on component', component=gSheet.GSHEET_MOVE_TO_HIGHLIGHT_SCROLL_CELL,
+                    input_direction=input_direction, input_wheel_size=scroll_down_size, similarity=0.70)
+
+    def click_2nd_tab(self, width, height):
+        return self._il_click(action_name='Click 2nd Tab',
+                              component=gSheet.GSHEET_HIGHLIGHT_TAB,
+                              width=width,
+                              height=height,
+                              wait_component=gSheet.GSHEET_HIGHLIGHT_TAB)

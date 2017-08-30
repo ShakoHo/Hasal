@@ -7,8 +7,7 @@ sys.path.append(INPUT_LIB_PATH)
 import os
 import common
 import basecase
-import gsheet
-
+import outlook
 import shutil
 import browser
 import time
@@ -23,14 +22,14 @@ class Case(basecase.SikuliInputLatencyCase):
         com.set_mouse_delay(0)
 
         # Prepare
-        app = gsheet.gSheet()
+        app = outlook.outlook()
         sample1_file_path = os.path.join(self.INPUT_IMG_SAMPLE_DIR_PATH, self.INPUT_IMG_OUTPUT_SAMPLE_1_NAME)
         sample1_file_path = sample1_file_path.replace(os.path.splitext(sample1_file_path)[1], '.png')
         capture_width = int(self.INPUT_RECORD_WIDTH)
         capture_height = int(self.INPUT_RECORD_HEIGHT)
 
         # Launch browser
-        my_browser = browser.Firefox()
+        my_browser = browser.Chrome()
 
         # Access link and wait
         my_browser.clickBar()
@@ -41,18 +40,17 @@ class Case(basecase.SikuliInputLatencyCase):
         sleep(2)
 
         # PRE ACTIONS
-        app.click_1st_cell()
-        sleep(1)
+        app.mouse_move_to_compose_new_mail_button()
 
         # Customized Region
         customized_region_name = 'end'
-        type_area = self.find_match_region(app.GSHEET_COLUMN_HEADER, similarity=0.75)
-        modified_area = self.tuning_region(type_area, x_offset=-10, w_offset=60, h_offset=90)
+        type_area = self.find_match_region(app.OUTLOOK_MIDDLE_UPPER_MENU_ICON, similarity=0.75)
+        modified_area = self.tuning_region(type_area, x_offset=-150, w_offset=200, h_offset=300)
         self.set_override_region_settings(customized_region_name, modified_area)
 
         # Record T1, and capture the snapshot image
         # Input Latency Action
-        screenshot, t1 = app.il_type('9', capture_width, capture_height)
+        loc, screenshot, t1 = app.click_compose_new_mail_button(capture_width, capture_height)
 
         # In normal condition, a should appear within 100ms,
         # but if lag happened, that could lead the show up after 100 ms,
@@ -63,6 +61,7 @@ class Case(basecase.SikuliInputLatencyCase):
         t2 = time.time()
 
         # POST ACTIONS
+        app.click_discard_mail()
 
         # Write timestamp
         com.updateJson({'t1': t1, 't2': t2}, self.INPUT_TIMESTAMP_FILE_PATH)
