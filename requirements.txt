@@ -10,7 +10,7 @@ pyssim==0.3
 argparse==1.2.1
 watchdog==0.8.3
 peakutils==1.0.3
-treeherder-client==3.1.0
+treeherder-client==4.0.0
 selenium==3.0.2
 jsonschema==2.6.0
 geckoprofiler_controller==0.0.4
