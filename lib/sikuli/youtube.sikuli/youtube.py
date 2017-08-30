@@ -17,6 +17,7 @@ class Youtube(WebApp):
     YOUTUBE_LOGO = [
         [os.path.join('pics', 'youtube_logo_new_win10.png'), 0, 0],
         [os.path.join('pics', 'youtube_logo.png'), 0, 0],
+        [os.path.join('pics', 'youtube_logo_20170830.png'), 0, 0],
     ]
 
     YOUTUBE_SEARCH_BTN = [
