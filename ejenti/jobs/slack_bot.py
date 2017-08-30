@@ -46,6 +46,22 @@ def init_consumer(kwargs):
     verify_consumer_kwargs(kwargs)
 
 
+def generate_slack_sending_message(message, channel='mgt'):
+    """
+    Return an object which contain the sending message which can be put into slack_sending_queue.
+    @param message: string
+    @param channel: mgt or election
+    @return:
+    """
+    if channel not in ['mgt', 'election']:
+        channel = 'mgt'
+    ret_obj = {
+        'message': message,
+        'channel': channel
+    }
+    return ret_obj
+
+
 def init_slack_bot(**kwargs):
     """
     Init Slack Bot
@@ -64,8 +80,8 @@ def init_slack_bot(**kwargs):
         queue_type_async: async_queue
     }
 
-    # TODO get Slack Sending queue
-    # sending_queue = kwargs.get('????_queue')
+    # get Slack Sending queue
+    sending_queue = kwargs.get('slack_sending_queue')
 
     # prepare username, password, and label
     configs = kwargs.get('configs')
@@ -138,16 +154,48 @@ def init_slack_bot(**kwargs):
 
                 time.sleep(DEFAULT_DELAY_SEC)
 
-                # TODO handle Slack Sending queue
-                # handle_sending_queue(slack_client, configs, cmd_config, election_type, bot_user_obj, bot_mgt_channel_obj, sending_queue)
+                # handle Slack Sending queue
+                handle_sending_queue(slack_client, bot_mgt_channel_obj, bot_election_channel_obj, sending_queue)
 
     except Exception as e:
         logging.error(e)
 
 
-def handle_sending_queue():
-    # TODO handle Slack Sending queue
-    pass
+def handle_sending_queue(slack_client, bot_mgt_channel_obj, bot_election_channel_obj, sending_queue):
+    """
+    Handle the Slack Sending queue.
+
+    The item format in slack_sending_queue:
+        {
+            'message': message,
+            'channel': channel
+        }
+
+    The message is string, and channel is one of ['mgt', 'election'].
+
+    @param slack_client:
+    @param configs:
+    @param cmd_config:
+    @param election_type:
+    @param bot_user_obj:
+    @param bot_mgt_channel_obj:
+    @param sending_queue:
+    @return:
+    """
+    if sending_queue.qsize() > 0:
+        message_item = sending_queue.get()
+
+        input_message = message_item.get('message')
+        if input_message:
+            input_channel = message_item.get('channel')
+            if input_channel == 'election':
+                channel_obj = bot_election_channel_obj
+            else:
+                channel_obj = bot_mgt_channel_obj
+
+            send(slack_client, input_message, channel_obj)
+
+            time.sleep(DEFAULT_DELAY_SEC)
 
 
 def handle_election(slack_client, rtm_ret, election_leader_heartbeat, election_timeout, election_type, bot_user_obj,
