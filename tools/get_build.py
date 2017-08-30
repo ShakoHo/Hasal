@@ -33,19 +33,19 @@ class GetBuild(object):
         self.repo = repo
         self.platform = platform
         self.platform_option = 'opt'
-        self.resultsets = []
+        self.pushes = []
         self.skip_status_check = status_check
         self.thclient = TreeherderClient()
 
-    def fetch_resultset(self, user_email, build_hash, default_count=500):
-        tmp_resultsets = self.thclient.get_resultsets(self.repo, count=default_count)
-        for resultset in tmp_resultsets:
-            if resultset['author'].lower() == user_email.lower():
-                self.resultsets.append(resultset)
+    def fetch_push(self, user_email, build_hash, default_count=500):
+        tmp_pushes = self.thclient.get_pushes(self.repo, count=default_count)
+        for push in tmp_pushes:
+            if push['author'].lower() == user_email.lower():
+                self.pushes.append(push)
                 if build_hash is None:
-                    return resultset
-                elif resultset['revision'] == build_hash:
-                    return resultset
+                    return push
+                elif push['revision'] == build_hash:
+                    return push
         print "Can't find the specify build hash [%s] in resultsets!!" % build_hash
         return None
 
@@ -147,7 +147,7 @@ class GetBuild(object):
             return False
 
     def get_try_build(self, user_email, build_hash, output_dp):
-        resultset = self.fetch_resultset(user_email, build_hash)
+        resultset = self.fetch_push(user_email, build_hash)
 
         # check result set
         if resultset:

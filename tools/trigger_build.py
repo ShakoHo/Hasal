@@ -48,7 +48,7 @@ class TriggerBuild(object):
     def __init__(self, input_env_data):
         self.platform_option = 'opt'
         self.thclient = TreeherderClient()
-        self.resultsets = []
+        self.pushes = []
         self.env_data = {key.upper(): value for key, value in input_env_data.items()}
         self.dispatch_variables(self.env_data)
 
@@ -198,15 +198,15 @@ class TriggerBuild(object):
                 print "ERROR: hasal json file in not in new location [%s]" % new_hasal_json_fp
             sys.exit(0)
 
-    def fetch_resultset(self, user_email, build_hash, default_count=500):
-        tmp_resultsets = self.thclient.get_resultsets(self.repo, count=default_count)
-        for resultset in tmp_resultsets:
-            if resultset['author'].lower() == user_email.lower():
-                self.resultsets.append(resultset)
+    def fetch_push(self, user_email, build_hash, default_count=500):
+        tmp_pushes = self.thclient.get_pushes(self.repo, count=default_count)
+        for push in tmp_pushes:
+            if push['author'].lower() == user_email.lower():
+                self.pushes.append(push)
                 if build_hash is None:
-                    return resultset
-                elif resultset['revision'] == build_hash:
-                    return resultset
+                    return push
+                elif push['revision'] == build_hash:
+                    return push
         print "Can't find the specify build hash [%s] in resultsets!!" % build_hash
         return None
 
@@ -309,7 +309,7 @@ class TriggerBuild(object):
             return None
 
     def get_try_build(self, user_email, build_hash, output_dp):
-        resultset = self.fetch_resultset(user_email, build_hash)
+        resultset = self.fetch_push(user_email, build_hash)
 
         # check result set
         if resultset:
