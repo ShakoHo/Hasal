@@ -1,14 +1,12 @@
 import random
 import string
-from thclient import (TreeherderClient, TreeherderResultSetCollection,
-                      TreeherderJobCollection)
+from thclient import (TreeherderClient, TreeherderJobCollection)
 
 
 class PerfherderUploader(object):
-    def __init__(self, client_id, secret, os_name, platform, machine_arch, build_arch, repo='mozilla-central', protocol='http', host='local.treeherder.mozilla.org'):
+    def __init__(self, client_id, secret, os_name, platform, machine_arch, build_arch, server_url=None, repo='mozilla-central'):
         # Perfherder Information
-        self.potocol = protocol
-        self.host = host
+        self.server_url = server_url
         self.client_id = client_id
         self.secret = secret
         self.repo = repo
@@ -48,28 +46,6 @@ class PerfherderUploader(object):
                 ]
             }
         ]
-
-    def create_resultset_collection(self, dataset):
-        trsc = TreeherderResultSetCollection()
-        for data in dataset:
-            trs = trsc.get_resultset()
-
-            trs.add_push_timestamp(data['push_timestamp'])
-            trs.add_revision(data['revision'])
-            trs.add_author(data['author'])
-            # trs.add_type(data['type'])
-
-            revisions = []
-            for rev in data['revisions']:
-                tr = trs.get_revision()
-                tr.add_revision(rev['revision'])
-                tr.add_author(rev['author'])
-                tr.add_comment(rev['comment'])
-                tr.add_repository(rev['repository'])
-                revisions.append(tr)
-            trs.add_revisions(revisions)
-            trsc.add(trs)
-        return trsc
 
     def create_job_dataset(self, revision, browser, timestamp, perf_data, link='', version='', repo_link='', video_links='', extra_info_obj={}):
         job_guid = PerfherderUploader.gen_guid(len(revision))
@@ -275,9 +251,6 @@ class PerfherderUploader(object):
         return tjc
 
     def submit(self, revision, browser, timestamp, perf_data, link='', version='', repo_link='', video_links='', extra_info_obj={}):
-        # rs_dataset = self.create_resultset_dataset(revision=revision,
-        #                                            timestamp=timestamp)
-        # trsc = self.create_resultset_collection(rs_dataset)
 
         j_dataset = self.create_job_dataset(revision=revision,
                                             browser=browser,
@@ -290,10 +263,12 @@ class PerfherderUploader(object):
                                             extra_info_obj=extra_info_obj)
         tjc = self.create_job_collection(j_dataset)
 
-        client = TreeherderClient(protocol=self.potocol,
-                                  host=self.host,
-                                  client_id=self.client_id,
-                                  secret=self.secret)
-        # don't post resultset, that overwrites existing data. see: https://bugzilla.mozilla.org/show_bug.cgi?id=1320694
-        # client.post_collection(self.repo, trsc)
+        if self.server_url:
+            client = TreeherderClient(server_url=self.server_url,
+                                      client_id=self.client_id,
+                                      secret=self.secret)
+        else:
+            client = TreeherderClient(client_id=self.client_id,
+                                      secret=self.secret)
+
         client.post_collection(self.repo, tjc)

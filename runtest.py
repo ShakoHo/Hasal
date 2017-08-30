@@ -260,15 +260,16 @@ class RunTest(object):
         else:
             self.logger.error("Can't find result json file[%s], please check the current environment!" % self.global_config['default-result-fn'])
 
+        server_url = '{protocol}://{host}'.format(protocol=self.upload_config['perfherder-protocol'],
+                                                  host=self.upload_config['perfherder-host'])
         perfherder_uploader = PerfherderUploader(self.upload_config['perfherder-client-id'],
                                                  self.upload_config['perfherder-secret'],
                                                  os_name=sys.platform,
                                                  platform=self.upload_config['perfherder-pkg-platform'],
                                                  machine_arch=self.upload_config['perfherder-pkg-platform'],
                                                  build_arch=self.upload_config['perfherder-pkg-platform'],
-                                                 repo=self.upload_config['perfherder-repo'],
-                                                 protocol=self.upload_config['perfherder-protocol'],
-                                                 host=self.upload_config['perfherder-host'])
+                                                 server_url=server_url,
+                                                 repo=self.upload_config['perfherder-repo'])
 
         upload_success_timestamp_list = []
         for current_time_stamp in upload_result_data:

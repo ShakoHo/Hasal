@@ -14,10 +14,10 @@ logger = get_logger(__name__)
 
 
 class PerfherderUploader(object):
-    def __init__(self, client_id, secret, os_name, platform, machine_arch, build_arch, repo='mozilla-central', protocol='http', host='local.treeherder.mozilla.org'):
+
+    def __init__(self, client_id, secret, os_name, platform, machine_arch, build_arch, server_url=None, repo='mozilla-central'):
         # Perfherder Information
-        self.potocol = protocol
-        self.host = host
+        self.server_url = server_url
         self.client_id = client_id
         self.secret = secret
         self.repo = repo
@@ -249,12 +249,14 @@ class PerfherderUploader(object):
                                             extra_info_obj=extra_info_obj)
         tjc = self.create_job_collection(j_dataset)
 
-        client = TreeherderClient(protocol=self.potocol,
-                                  host=self.host,
-                                  client_id=self.client_id,
-                                  secret=self.secret)
-        # don't post resultset, that overwrites existing data. see: https://bugzilla.mozilla.org/show_bug.cgi?id=1320694
-        # client.post_collection(self.repo, trsc)
+        if self.server_url:
+            client = TreeherderClient(server_url=self.server_url,
+                                      client_id=self.client_id,
+                                      secret=self.secret)
+        else:
+            client = TreeherderClient(client_id=self.client_id,
+                                      secret=self.secret)
+
         try:
             return_result = client.post_collection(self.repo, tjc)
         except Exception as e:

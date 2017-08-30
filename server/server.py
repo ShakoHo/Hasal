@@ -618,15 +618,17 @@ class HasalServer:
                                     }
                                     # Upload to Perfherder
                                     try:
+                                        server_url = '{protocol}://{host}'.format(protocol=HasalServer._config_perfherder_protocol,
+                                                                                  host=HasalServer._config_perfherder_host)
+
                                         uploader = PerfherderUploader(HasalServer._config_perfherder_client_id,
                                                                       HasalServer._config_perfherder_secret,
                                                                       os_name=os_name,
                                                                       platform=test_result.get('platform'),
                                                                       machine_arch=test_result.get('platform'),
                                                                       build_arch=test_result.get('platform'),
-                                                                      repo=HasalServer._config_perfherder_repo,
-                                                                      protocol=HasalServer._config_perfherder_protocol,
-                                                                      host=HasalServer._config_perfherder_host)
+                                                                      server_url=server_url,
+                                                                      repo=HasalServer._config_perfherder_repo)
                                         uploader.submit(revision=test_result.get('revision'),
                                                         browser=browser_name,
                                                         timestamp=start_timestamp,
