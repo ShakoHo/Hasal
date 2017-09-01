@@ -17,6 +17,9 @@ from hasalPulsePublisher import HasalPulsePublisher
 
 
 class TasksTrigger(object):
+    """
+    MD5_HASH_FOLDER is ".md5"
+    """
     ARCHIVE_ROOT_URL = 'https://archive.mozilla.org'
     ARCHIVE_LATEST_FOLDER = '/pub/firefox/nightly/latest-mozilla-central/'
     ARCHIVE_LINK_RE_STRING = r'(?<=href=").*?(?=")'

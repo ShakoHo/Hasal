@@ -30,6 +30,8 @@ def main():
     Demo of pushing MetaTask to Pulse.
     It will load Pulse config from `--config`, please create the config json file before run this demo.
 
+    The timestamp file of each job will be stored into "ejenti/pulse_modules/.md5/<JOB_NAME>".
+
     ex:
     {
         "pulse_username": "<PULSE_USERNAME>",

@@ -6,6 +6,8 @@
 env/
 env-*/
 .Hasal
+.ipynb_checkpoints/
+temp/
 
 #local file
 agent_status/
@@ -23,11 +25,21 @@ _virtualenv
 HasalServer.log.*
 stage/*
 docs/*
-ejenti/**/.md5/
 ! thirdParty/userChrome.css
 ! thirdParty/extensions
 ! thirdParty/obsConfigs
 ! thirdParty/ipynbTemplates
+
+# ejenti
+ejenti/**/.md5/
+rotating_mgt.log.*
+job_store.db
+ejenti.json
+ejenti.txt
+firefox-*.json
+firefox-*.dmg
+firefox-*.zip
+firefox-*.tar.bz2
 
 # File types to ignore
 *.zip
