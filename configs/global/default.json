@@ -78,5 +78,8 @@
   },
   "youtube": {
     "test-url"                                              : "https://www.youtube.com/?hl=en&gl=US"
+  },
+  "yahoo":{
+    "mail-url"                                              : "https://mg.mail.yahoo.com"
   }
 }
