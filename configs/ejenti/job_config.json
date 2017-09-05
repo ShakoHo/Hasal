@@ -38,5 +38,15 @@
       "bot_mgt_channel": "",
       "bot_election_channel": ""
     }
+  },
+  "monitor_disk_usage": {
+    "module-path": "jobs.disk_usage_monitor",
+    "trigger-type": "interval",
+    "interval": 10800,
+    "max-instances": 1,
+    "default-loaded": false,
+    "configs": {
+      "alert_usage_percent": 80
+    }
   }
 }

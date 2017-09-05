@@ -10,7 +10,7 @@ from datetime import datetime
 from slackclient import SlackClient
 
 
-DEFAULT_VERIFY_KWARGS_LIST = ['sync_queue', 'async_queue', 'configs']
+DEFAULT_VERIFY_KWARGS_LIST = ['sync_queue', 'async_queue', 'slack_sending_queue', 'configs']
 
 DEFAULT_DELAY_SEC = 1
 
@@ -64,6 +64,7 @@ def generate_slack_sending_message(message, channel='mgt'):
 
 def init_slack_bot(**kwargs):
     """
+    [Job Entry Point]
     Init Slack Bot
     @param kwargs:
     @return:
@@ -185,8 +186,12 @@ def handle_sending_queue(slack_client, bot_mgt_channel_obj, bot_election_channel
     if sending_queue.qsize() > 0:
         message_item = sending_queue.get()
 
-        input_message = message_item.get('message')
-        if input_message:
+        origin_message = message_item.get('message')
+
+        if origin_message:
+            input_message = '*[Agent]* {hn}/{ipaddr}\n{message}'.format(hn=get_current_hostname(),
+                                                                        ipaddr=get_current_ip(),
+                                                                        message=origin_message)
             input_channel = message_item.get('channel')
             if input_channel == 'election':
                 channel_obj = bot_election_channel_obj
@@ -451,7 +456,7 @@ def handle_rtm_message(slack_client, rtm_ret, configs, cmd_config, election_type
 
     # Skip if message comes from bot it-self
     if user_id == bot_id:
-        logging.debug('Message from Bot: {msg}, skip.'.format(msg=message))
+        # logging.debug('Message from Bot: {msg}, skip.'.format(msg=message))
         return False
 
     # getting channel and user name
