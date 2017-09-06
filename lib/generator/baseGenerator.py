@@ -88,6 +88,7 @@ class BaseGenerator(object):
 
     def generate_update_result_for_ft(self, input_update_result, input_compare_result, input_run_time_dict):
         update_result = copy.deepcopy(input_update_result)
+        update_result['latest_p75'] = input_compare_result['latest_p75']
         update_result['total_run_no'] += 1
         update_result['detail'].extend(input_compare_result['running_time_result'])
         if input_compare_result['run_time'] <= 0:

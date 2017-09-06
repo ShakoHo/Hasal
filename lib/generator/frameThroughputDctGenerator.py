@@ -239,7 +239,10 @@ class FrameThroughputDctGenerator(BaseGenerator):
         if self.compare_result.get('running_time_result', None):
             run_time, event_time_dict = self.calculate_runtime_base_on_event(self.compare_result['running_time_result'])
             self.compare_result.update({'run_time': run_time, 'event_time_dict': event_time_dict})
-            self.compare_result.update(self.get_frame_throughput(self.compare_result['running_time_result'], self.compare_result['merged_crop_image_list']))
+            ft_compare_result = self.get_frame_throughput(self.compare_result['running_time_result'],
+                                                          self.compare_result['merged_crop_image_list'])
+            self.compare_result.update(ft_compare_result)
+            self.compare_result.update({'latest_p75': ft_compare_result['third_quartile']})
 
         return self.compare_result
 
