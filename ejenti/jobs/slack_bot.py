@@ -9,6 +9,12 @@ import logging
 from datetime import datetime
 from slackclient import SlackClient
 
+# The job will be imported by ejenti. Top level will be `ejenti`, not `hasal` or `ejenti.jobs`.
+try:
+    from ..slack_modules.interactive_commands import *  # NOQA
+except:
+    from slack_modules.interactive_commands import *  # NOQA
+
 
 DEFAULT_VERIFY_KWARGS_LIST = ['sync_queue', 'async_queue', 'slack_sending_queue', 'configs']
 
@@ -34,6 +40,10 @@ ELECTION_BOT_LEADER = 'LEADER'
 ELECTION_MSG_HEARTBEAT = 'HB'
 ELECTION_MSG_ELECTION = 'ELEC'
 
+SLACK_INTERACTIVE_CMD = {
+    'slack-disk-usage': cmd_disk_usage
+}
+
 
 def verify_consumer_kwargs(kwargs):
     for verify_kwargs_key in DEFAULT_VERIFY_KWARGS_LIST:
@@ -48,6 +58,7 @@ def init_consumer(kwargs):
 
 def generate_slack_sending_message(message, channel='mgt'):
     """
+    [Public]
     Return an object which contain the sending message which can be put into slack_sending_queue.
     @param message: string
     @param channel: mgt or election
@@ -144,7 +155,7 @@ def init_slack_bot(**kwargs):
 
                         elif channel_id == bot_mgt_channel_id:
                             # handle RTM response
-                            handle_rtm(slack_client, rtm_ret, configs, cmd_config, election_type, bot_user_obj, bot_mgt_channel_obj, queue_mapping)
+                            handle_rtm(slack_client, rtm_ret, configs, cmd_config, election_type, bot_user_obj, bot_mgt_channel_obj, queue_mapping, sending_queue)
 
                 # election counter
                 election_leader_heartbeat, election_timeout, election_type = handle_election_counter(slack_client,
@@ -386,7 +397,7 @@ def get_bot_power_for_election():
     return int('{}{}'.format(ip_2_int(ip), pid))
 
 
-def handle_rtm(slack_client, rtm_ret, configs, cmd_config, election_type, bot_user_obj, bot_mgt_channel_obj, queue_mapping):
+def handle_rtm(slack_client, rtm_ret, configs, cmd_config, election_type, bot_user_obj, bot_mgt_channel_obj, queue_mapping, sending_queue):
     """
     Handle Slack RTM message.
     Ref: https://api.slack.com/rtm
@@ -398,6 +409,7 @@ def handle_rtm(slack_client, rtm_ret, configs, cmd_config, election_type, bot_us
     @param bot_user_obj:
     @param bot_mgt_channel_obj:
     @param queue_mapping:
+    @param sending_queue:
     @return:
     """
     EVENT_TYPES_HANDLERS = {
@@ -407,11 +419,11 @@ def handle_rtm(slack_client, rtm_ret, configs, cmd_config, election_type, bot_us
     evt_type = rtm_ret.get('type')
     for evt in EVENT_TYPES_HANDLERS.keys():
         if evt == evt_type:
-            return EVENT_TYPES_HANDLERS[evt](slack_client, rtm_ret, configs, cmd_config, election_type, bot_user_obj, bot_mgt_channel_obj, queue_mapping)
+            return EVENT_TYPES_HANDLERS[evt](slack_client, rtm_ret, configs, cmd_config, election_type, bot_user_obj, bot_mgt_channel_obj, queue_mapping, sending_queue)
     return False
 
 
-def handle_rtm_message(slack_client, rtm_ret, configs, cmd_config, election_type, bot_user_obj, bot_mgt_channel_obj, queue_mapping):
+def handle_rtm_message(slack_client, rtm_ret, configs, cmd_config, election_type, bot_user_obj, bot_mgt_channel_obj, queue_mapping, sending_queue):
     """
     Handle Slack RTM message which type is "message".
     @param slack_client:
@@ -468,7 +480,7 @@ def handle_rtm_message(slack_client, rtm_ret, configs, cmd_config, election_type
                                                            t=message))
 
     # parsing message to word list
-    word_list = re.split('\s', message.strip(), maxsplit=2)
+    word_list = re.split('\s*', message.strip(), maxsplit=2)
     if len(word_list) > 0:
         """
         Handle Leader commands
@@ -490,6 +502,7 @@ def handle_rtm_message(slack_client, rtm_ret, configs, cmd_config, election_type
         if word_list[0] == get_current_hostname() or word_list[0] == get_current_ip():
 
             logging.debug('Word list: {}'.format(word_list))
+            # getting Input Command Name
             if len(word_list) >= 2:
                 input_cmd_name = word_list[1]
             else:
@@ -498,6 +511,7 @@ def handle_rtm_message(slack_client, rtm_ret, configs, cmd_config, election_type
                 ret_agent_message = 'There is no command.'
                 return handle_rtm_message_agent_fail(slack_client, ret_agent_message, message, bot_mgt_channel_obj)
 
+            # getting Input Command's configs
             if len(word_list) >= 3:
                 try:
                     input_configs = json.loads(word_list[2])
@@ -509,40 +523,59 @@ def handle_rtm_message(slack_client, rtm_ret, configs, cmd_config, election_type
             else:
                 input_configs = {}
 
-            # getting command object for cmd_config
-            input_cmd_obj = cmd_config['cmd-settings'].get(input_cmd_name)
-            if not input_cmd_obj:
-                # Error, show usage
-                logging.debug('Can not found command in cmd_config: {}'.format(input_cmd_name))
-                ret_agent_message = 'Can not found command in cmd_config.'
-                return handle_rtm_message_agent_fail(slack_client, ret_agent_message, message, bot_mgt_channel_obj)
-            elif input_cmd_obj.get('queue-type') not in queue_mapping.keys():
-                # Error, show usage
-                logging.debug('Not supported queue-type: {}'.format(input_cmd_obj.get('queue-type')))
-                ret_agent_message = 'Not supported queue-type.'
-                return handle_rtm_message_agent_fail(slack_client, ret_agent_message, message, bot_mgt_channel_obj)
-            else:
-                if input_configs:
-                    input_cmd_obj['configs'] = input_configs
-                    ret_message = '*[Agent]* {hn}/{ipaddr}\n*[Get Command]* {cmd}\n*[Configs]*\n{cfg}'.format(hn=get_current_hostname(),
-                                                                                                              ipaddr=get_current_ip(),
-                                                                                                              cmd=input_cmd_name,
-                                                                                                              cfg=input_configs)
+            #
+            # Slack Interactive Commands
+            #
+            if input_cmd_name in SLACK_INTERACTIVE_CMD:
+                # getting command object from SLACK_INTERACTIVE_CMD
+                input_cmd_obj = SLACK_INTERACTIVE_CMD.get(input_cmd_name)
+                if not input_cmd_obj:
+                    # Error, show usage
+                    logging.debug('Can not found command in SLACK_INTERACTIVE_CMD: {}'.format(input_cmd_name))
+                    ret_agent_message = 'Can not found command in Slack Interactive Commands.'
+                    return handle_rtm_message_agent_fail(slack_client, ret_agent_message, message, bot_mgt_channel_obj)
                 else:
-                    ret_message = '*[Agent]* {hn}/{ipaddr}\n*[Get Command]* {cmd}\n*[Configs]* no configs'.format(hn=get_current_hostname(),
-                                                                                                                  ipaddr=get_current_ip(),
-                                                                                                                  cmd=input_cmd_name)
-                task_obj = {
-                    COMMAND_TASK_KEY_OBJECT: input_cmd_obj,
-                    COMMAND_TASK_KEY_PATTERN: input_cmd_name,
-                    COMMAND_TASK_KEY_INPUT_STR: message
-                }
+                    return input_cmd_obj(sending_queue=sending_queue, cmd_configs=input_configs)
+            #
+            # cmd_config
+            #
+            elif input_cmd_name in cmd_config['cmd-settings']:
+                # getting command object from cmd_config
+                input_cmd_obj = cmd_config['cmd-settings'].get(input_cmd_name)
+                if not input_cmd_obj:
+                    # Error, show usage
+                    logging.debug('Can not found command in cmd_config: {}'.format(input_cmd_name))
+                    ret_agent_message = 'Can not found command in cmd_config.'
+                    return handle_rtm_message_agent_fail(slack_client, ret_agent_message, message, bot_mgt_channel_obj)
+                elif input_cmd_obj.get('queue-type') not in queue_mapping.keys():
+                    # Error, show usage
+                    logging.debug('Not supported queue-type: {}'.format(input_cmd_obj.get('queue-type')))
+                    ret_agent_message = 'Not supported queue-type.'
+                    return handle_rtm_message_agent_fail(slack_client, ret_agent_message, message, bot_mgt_channel_obj)
+                else:
+                    if input_configs:
+                        input_cmd_obj['configs'] = input_configs
+                        ret_message = '*[Agent]* {hn}/{ipaddr}\n*[Get Command]* {cmd}\n*[Configs]*\n{cfg}'.format(
+                            hn=get_current_hostname(),
+                            ipaddr=get_current_ip(),
+                            cmd=input_cmd_name,
+                            cfg=input_configs)
+                    else:
+                        ret_message = '*[Agent]* {hn}/{ipaddr}\n*[Get Command]* {cmd}\n*[Configs]* no configs'.format(
+                            hn=get_current_hostname(),
+                            ipaddr=get_current_ip(),
+                            cmd=input_cmd_name)
+                    task_obj = {
+                        COMMAND_TASK_KEY_OBJECT: input_cmd_obj,
+                        COMMAND_TASK_KEY_PATTERN: input_cmd_name,
+                        COMMAND_TASK_KEY_INPUT_STR: message
+                    }
 
-                input_queue_type = input_cmd_obj.get('queue-type')
-                target_queue = queue_mapping.get(input_queue_type)
-                target_queue.put(task_obj)
+                    input_queue_type = input_cmd_obj.get('queue-type')
+                    target_queue = queue_mapping.get(input_queue_type)
+                    target_queue.put(task_obj)
 
-                return send(slack_client, ret_message, bot_mgt_channel_obj)
+                    return send(slack_client, ret_message, bot_mgt_channel_obj)
 
 
 def handle_rtm_message_leader_help(slack_client, rtm_ret, configs, cmd_config, election_type, bot_user_obj, bot_mgt_channel_obj, leader_cmd_list):
@@ -580,6 +613,12 @@ def handle_rtm_message_leader_help(slack_client, rtm_ret, configs, cmd_config, e
     help_message += '*[Leader Commands]*\n'
     for cmd_name in sorted(leader_cmd_list):
         help_message += '    *{cmd}*\n'.format(cmd=cmd_name)
+
+    # Slack Interactive Commands
+    if len(SLACK_INTERACTIVE_CMD) > 0:
+        help_message += '*[Slack Interactive Commands]*\n'
+        for cmd_name in sorted(SLACK_INTERACTIVE_CMD):
+            help_message += '    *{cmd}*\n'.format(cmd=cmd_name)
 
     # Sync commands
     if len(sync_commands) > 0:

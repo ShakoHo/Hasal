@@ -7,9 +7,14 @@ import platform
 from mozillapulse.messages.base import GenericMessage
 
 # The job will be imported by ejenti. Top level will be `ejenti`, not `hasal` or `ejenti.jobs`.
-from pulse_modules.hasal_consumer import HasalConsumer  # NOQA
-from pulse_modules.hasal_publisher import HasalPublisher  # NOQA
-from pulse_modules.hasalPulsePublisher import HasalPulsePublisher  # NOQA
+try:
+    from ..pulse_modules.hasal_consumer import HasalConsumer  # NOQA
+    from ..pulse_modules.hasal_publisher import HasalPublisher  # NOQA
+    from ..pulse_modules.hasalPulsePublisher import HasalPulsePublisher  # NOQA
+except:
+    from pulse_modules.hasal_consumer import HasalConsumer  # NOQA
+    from pulse_modules.hasal_publisher import HasalPublisher  # NOQA
+    from pulse_modules.hasalPulsePublisher import HasalPulsePublisher  # NOQA
 
 
 PULSE_KEY_TASK = 'task'
