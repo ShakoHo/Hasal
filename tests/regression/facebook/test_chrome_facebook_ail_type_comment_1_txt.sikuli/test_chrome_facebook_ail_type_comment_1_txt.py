@@ -37,7 +37,8 @@ class Case(basecase.SikuliInputLatencyCase):
         # Customized Region
         customized_region_name = 'end'
         type_area_component = [
-            ['facebook_type_comment_win.png', 0, 0]
+            ['facebook_type_comment_win.png', 0, 0],
+            ['facebook_type_comment_win_20170906.png', 0, 0]
         ]
         type_area = self.find_match_region(type_area_component, similarity=0.80)
         self.set_override_region_settings(customized_region_name, type_area)
