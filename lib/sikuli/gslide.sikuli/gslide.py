@@ -29,4 +29,3 @@ class gSlide(WebApp):
 
     def click_content_text_box(self):
         return self._doubleclick(action_name="Click content text box", component=gSlide.GSLIDE_CLICK_CONTENT_TEXT_BOX)
-
