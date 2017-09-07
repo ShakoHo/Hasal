@@ -15,6 +15,7 @@ selenium==3.0.2
 jsonschema==2.6.0
 geckoprofiler_controller==0.0.4
 requests==2.18.4
+pyasn1==0.3.3
 
 # When we remove related imported packages from Hasal, move following packages into other file
 matplotlib==1.5.3
