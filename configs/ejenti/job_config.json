@@ -44,9 +44,19 @@
     "trigger-type": "interval",
     "interval": 10800,
     "max-instances": 1,
-    "default-loaded": false,
+    "default-loaded": true,
     "configs": {
       "alert_usage_percent": 80
+    }
+  },
+  "monitor_upload_result": {
+    "module-path": "jobs.upload_result_monitor",
+    "trigger-type": "interval",
+    "interval": 3600,
+    "max-instances": 1,
+    "default-loaded": true,
+    "configs": {
+      "file_change_time_range_sec": 3600
     }
   }
 }
