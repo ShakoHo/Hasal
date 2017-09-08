@@ -58,5 +58,13 @@
     "configs": {
       "file_change_time_range_sec": 3600
     }
+  },
+  "monitor_running_statistics": {
+    "module-path": "jobs.running_statistics_monitor",
+    "trigger-type": "interval",
+    "interval": 60,
+    "max-instances": 1,
+    "default-loaded": true,
+    "configs": {}
   }
 }
