@@ -324,7 +324,7 @@ class PerfherderUploadDataGenerator(object):
 class VideoUploader(object):
     DEFAULT_UPLOAD_VIDEO_YAML_SETTING = "./mozhasalvideo.yaml"
     DEFAULT_UPLOAD_VIDEO_MYCRED_TXT = "./mycreds_mozhasalvideo.txt"
-    DEFAULT_UPLOAD_FOLDER_URI = "0B9g1GJPq5xo8S0QwandkOGhnNUE"
+    DEFAULT_UPLOAD_FOLDER_URI = "0B6LePZQnd-uOMWpEVFN2NXVBTG8"
 
     @staticmethod
     def upload_video(upload_video_fp):
