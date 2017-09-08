@@ -187,11 +187,13 @@ class facebook(WebApp):
 
     FACEBOOK_RIGHT_PANEL_CONTACT = [
         [os.path.join('pics', 'facebook_contact_linda_win7.png'), 0, 15],
-        [os.path.join('pics', 'facebook_contact.png'), 0, 15]
+        [os.path.join('pics', 'facebook_contact.png'), 0, 15],
+        [os.path.join('pics', 'facebook_contact_20170908.png'), 0, 15]
     ]
 
     FACEBOOK_UNDER_RIGHT_PANEL_CONTACT = [
-        [os.path.join('pics', 'facebook_contact.png'), 0, 50]
+        [os.path.join('pics', 'facebook_contact.png'), 0, 50],
+        [os.path.join('pics', 'facebook_contact_20170908.png'), 0, 50]
     ]
 
     FACEBOOK_MESSAGE_SEARCH_BAR = [
