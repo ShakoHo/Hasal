@@ -44,7 +44,7 @@ class Case(basecase.SikuliInputLatencyCase):
         self.set_override_region_settings(customized_region_name_end, compare_area)
 
         # click to make sure space keys would work in scrolling
-        click(Pattern("Thinking.png").targetOffset(-284, -4))
+        click(Pattern("post_bar.png").targetOffset(-190, -26))
 
         t1 = time.time()
         capimg1 = capture(0, 0, capture_width, capture_height)
