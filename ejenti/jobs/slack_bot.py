@@ -691,7 +691,7 @@ def handle_rtm_message_leader_help(slack_client, rtm_ret, configs, cmd_config, e
 
 
 def handle_rtm_message_leader_list_agents(slack_client, rtm_ret, configs, cmd_config, election_type, bot_user_obj,
-                                   bot_mgt_channel_obj, follower_list, leader_cmd_list):
+                                          bot_mgt_channel_obj, follower_list, leader_cmd_list):
     """
     Leader will handle the RTM help message, show usage.
     Will be register in LEADER_CMD_HANDLERS.
@@ -714,8 +714,8 @@ def handle_rtm_message_leader_list_agents(slack_client, rtm_ret, configs, cmd_co
 
     msg = '*[Current Agents]*\n'
     msg += '{hn}/{ip}, PID {pid}, Leader\n'.format(hn=get_current_hostname(),
-                                                    ip=get_current_ip(),
-                                                    pid=os.getpid())
+                                                   ip=get_current_ip(),
+                                                   pid=os.getpid())
 
     for agent_key, agent_object in sorted(follower_list.items()):
 
@@ -723,12 +723,16 @@ def handle_rtm_message_leader_list_agents(slack_client, rtm_ret, configs, cmd_co
         ip_addr = agent_object.get(KEY_FOLLOWER_INFO_IP, 'NA')
         pid = agent_object.get(KEY_FOLLOWER_INFO_PID, 'NA')
         ts = agent_object.get(KEY_FOLLOWER_INFO_TIMESTAMP, 0)
-        sec = '{}s ago'.format(int(current_time - ts)) if ts else 'unknow'
+
+        if current_time > ts:
+            sec = '{}s ago'.format(int(current_time - ts)) if ts else 'unknow'
+        else:
+            sec = 'pls update NTP'
 
         msg += '{hn}/{ip}, PID {pid}, {sec}\n'.format(hn=hn,
-                                                        ip=ip_addr,
-                                                        pid=pid,
-                                                        sec=sec)
+                                                      ip=ip_addr,
+                                                      pid=pid,
+                                                      sec=sec)
 
     send(slack_client, msg, bot_mgt_channel_obj)
 
