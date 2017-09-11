@@ -5,7 +5,9 @@ import logging
 from datetime import datetime
 from watchdog.observers import Observer
 from watchdog.events import PatternMatchingEventHandler
+
 from slack_bot import generate_slack_sending_message
+from lib.common.commonUtil import StatusRecorder
 
 
 DEFAULT_VERIFY_KWARGS_LIST = ['sync_queue', 'async_queue', 'slack_sending_queue', 'configs']
@@ -25,12 +27,12 @@ KEY_CASE_INFO = 'case_info'
 KEY_CASE_INFO_CASE_NAME = 'case_name'
 KEY_CASE_INFO_CASE_TIMESTAMP = 'case_time_stamp'
 
-KEY_CURRENT_STATUS = 'current_status'
-KEY_CURRENT_STATUS_STATUS_IMG_COMPARE_RESULT = 'status_img_compare_result'
-DEFAULT_SUCCESS_STATUS_IMG_COMPARE_RESULT = 'PASS_IMG_COMPARE_RESULT'
-KEY_CURRENT_STATUS_SIKULI_RUNNING_STAT = 'sikuli_running_stat'
+KEY_CURRENT_STATUS = StatusRecorder.DEFAULT_FIELD_CURRENT_STATUS
+KEY_CURRENT_STATUS_STATUS_IMG_COMPARE_RESULT = StatusRecorder.STATUS_IMG_COMPARE_RESULT
+DEFAULT_SUCCESS_STATUS_IMG_COMPARE_RESULT = StatusRecorder.PASS_IMG_COMPARE_RESULT
+KEY_CURRENT_STATUS_SIKULI_RUNNING_STAT = StatusRecorder.STATUS_SIKULI_RUNNING_VALIDATION
 DEFAULT_SUCCESS_SIKULI_RUNNING_STAT = '0'
-KEY_CURRENT_STATUS_FPS_STAT = 'fps_stat'
+KEY_CURRENT_STATUS_FPS_STAT = StatusRecorder.STATUS_FPS_VALIDATION
 
 
 def verify_consumer_kwargs(kwargs):
