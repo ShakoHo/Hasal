@@ -656,12 +656,7 @@ def handle_rtm_message_leader_help(slack_client, rtm_ret, configs, cmd_config, e
         if cmd_obj.get('queue-type') == 'async':
             async_commands[cmd_key] = cmd_obj.get('desc', '')
 
-    help_message = '*[Usage]*\n\n' \
-                   '*Input Format* <Agent> <Command> [<Configs>]\n' \
-                   '    <Agent>: string, hostname or ip address.\n' \
-                   '    <Command>: string, command name.\n' \
-                   '    <Configs>: JSON, configs.\n\n' \
-                   'Here is supported commands.\n\n'
+    help_message = 'Here is supported commands.\n\n'
 
     # Leader commands
     help_message += '*[Leader Commands]*\n'
@@ -685,6 +680,12 @@ def handle_rtm_message_leader_help(slack_client, rtm_ret, configs, cmd_config, e
         help_message += '*Sync Commands*\n'
         for cmd_name in sorted(async_commands):
             help_message += '    *{cmd}*\t{desc}\n'.format(cmd=cmd_name, desc=async_commands.get(cmd_name))
+
+    help_message += '\n*[Usage]*\n' \
+                    '*Input Format* <Agent> <Command> [<Configs>]\n' \
+                    '    <Agent>: string, hostname or ip address.\n' \
+                    '    <Command>: string, command name.\n' \
+                    '    <Configs>: JSON, configs.\n\n' \
 
     send(slack_client, help_message, bot_mgt_channel_obj)
 
