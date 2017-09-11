@@ -15,7 +15,6 @@ def cmd_disk_usage(sending_queue, cmd_configs={}):
 
     msg_obj = _generate_slack_sending_message(msg)
     sending_queue.put(msg_obj)
-    pass
 
 
 def _generate_slack_sending_message(message, channel='mgt'):

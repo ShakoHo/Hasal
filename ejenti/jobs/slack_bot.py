@@ -11,7 +11,7 @@ from slackclient import SlackClient
 
 # The job will be imported by ejenti. Top level will be `ejenti`, not `hasal` or `ejenti.jobs`.
 try:
-    from ..slack_modules.interactive_commands import *  # NOQA
+    from ejenti.slack_modules.interactive_commands import *  # NOQA
 except:
     from slack_modules.interactive_commands import *  # NOQA
 
@@ -27,10 +27,11 @@ KEY_BOT_API_TOKEN = 'bot_api_token'
 KEY_BOT_MGT_CHANNEL = 'bot_mgt_channel'
 KEY_BOT_ELECTION_CHANNEL = 'bot_election_channel'
 
-ELECTION_SHORT_TIMEOUT = 60
+ELECTION_SHORT_TIMEOUT = 15
 ELECTION_TIMEOUT = 10 * 60
 ELECTION_TIMEOUT_RANDOM_OFFSET = 60
 ELECTION_LEADER_HEARTBEAT = 5 * 60
+ELECTION_FOLLOWER_HEARTBEAT = 5 * 60
 ELECTION_SEND_MSG_DELAY = 5
 
 ELECTION_BOT_FOLLOWER = 'FOLLOWER'
@@ -39,6 +40,15 @@ ELECTION_BOT_LEADER = 'LEADER'
 
 ELECTION_MSG_HEARTBEAT = 'HB'
 ELECTION_MSG_ELECTION = 'ELEC'
+ELECTION_MSG_FOLLOWER_HEARTBEAT = 'FW'
+
+KEY_FOLLOWER_INFO_TYPE = 'type'
+KEY_FOLLOWER_INFO_HOSTNAME = 'hostname'
+KEY_FOLLOWER_INFO_IP = 'ip'
+KEY_FOLLOWER_INFO_PID = 'pid'
+KEY_FOLLOWER_INFO_POWER = 'power'
+KEY_FOLLOWER_INFO_TIME = 'time'
+KEY_FOLLOWER_INFO_TIMESTAMP = 'ts'
 
 SLACK_INTERACTIVE_CMD = {
     'slack-disk-usage': cmd_disk_usage
@@ -135,7 +145,10 @@ def init_slack_bot(**kwargs):
             bot_election_channel_id = bot_election_channel_obj.id
             election_leader_heartbeat = ELECTION_LEADER_HEARTBEAT
             election_timeout = ELECTION_SHORT_TIMEOUT
+            election_follower_heartbeat_timeout = ELECTION_FOLLOWER_HEARTBEAT + random.randint(-60, 60)
             election_type = ELECTION_BOT_FOLLOWER
+
+            follower_list = {}
 
             while True:
                 rtm_ret_list = slack_client.rtm_read()
@@ -145,24 +158,27 @@ def init_slack_bot(**kwargs):
 
                         if channel_id == bot_election_channel_id:
                             # handle Bots election
-                            election_leader_heartbeat, election_timeout, election_type = handle_election(slack_client,
-                                                                                                         rtm_ret,
-                                                                                                         election_leader_heartbeat,
-                                                                                                         election_timeout,
-                                                                                                         election_type,
-                                                                                                         bot_user_obj,
-                                                                                                         bot_election_channel_obj)
+                            election_leader_heartbeat, election_timeout, election_follower_heartbeat_timeout, election_type, follower_list = handle_election(slack_client,
+                                                                                                                                                             rtm_ret,
+                                                                                                                                                             election_leader_heartbeat,
+                                                                                                                                                             election_timeout,
+                                                                                                                                                             election_follower_heartbeat_timeout,
+                                                                                                                                                             election_type,
+                                                                                                                                                             bot_user_obj,
+                                                                                                                                                             bot_election_channel_obj,
+                                                                                                                                                             follower_list)
 
                         elif channel_id == bot_mgt_channel_id:
                             # handle RTM response
-                            handle_rtm(slack_client, rtm_ret, configs, cmd_config, election_type, bot_user_obj, bot_mgt_channel_obj, queue_mapping, sending_queue)
+                            handle_rtm(slack_client, rtm_ret, configs, cmd_config, election_type, bot_user_obj, bot_mgt_channel_obj, queue_mapping, sending_queue, follower_list)
 
                 # election counter
-                election_leader_heartbeat, election_timeout, election_type = handle_election_counter(slack_client,
-                                                                                                     election_leader_heartbeat,
-                                                                                                     election_timeout,
-                                                                                                     election_type,
-                                                                                                     bot_election_channel_obj)
+                election_leader_heartbeat, election_timeout, election_follower_heartbeat_timeout, election_type = handle_election_counter(slack_client,
+                                                                                                                                          election_leader_heartbeat,
+                                                                                                                                          election_timeout,
+                                                                                                                                          election_follower_heartbeat_timeout,
+                                                                                                                                          election_type,
+                                                                                                                                          bot_election_channel_obj)
 
                 time.sleep(DEFAULT_DELAY_SEC)
 
@@ -214,37 +230,39 @@ def handle_sending_queue(slack_client, bot_mgt_channel_obj, bot_election_channel
             time.sleep(DEFAULT_DELAY_SEC)
 
 
-def handle_election(slack_client, rtm_ret, election_leader_heartbeat, election_timeout, election_type, bot_user_obj,
-                    bot_election_channel_obj):
+def handle_election(slack_client, rtm_ret, election_leader_heartbeat, election_timeout, election_follower_heartbeat_timeout,
+                    election_type, bot_user_obj, bot_election_channel_obj, follower_list):
     """
     Handle Bot Election.
     @param slack_client:
     @param rtm_ret:
     @param election_leader_heartbeat: Leader heartbeat counter
     @param election_timeout: Election timeout counter
+    @param election_follower_heartbeat_timeout: Election follower timeout counter
     @param election_type: Election Type. 'FOLLOWER', 'CANDIDATE', or 'LEADER'
     @param bot_user_obj:
     @param bot_election_channel_obj:
+    @param follower_list:
     @return: election_leader_heartbeat, election_timeout, election_type
     """
     user_id = rtm_ret.get('user')
     # if the election message comes from other user, then skip it.
     if user_id != bot_user_obj.id:
-        return election_leader_heartbeat, election_timeout, election_type
+        return election_leader_heartbeat, election_timeout, election_follower_heartbeat_timeout, election_type, follower_list
 
     text = rtm_ret.get('text')
     if text:
         message = text.encode('utf-8')
     else:
-        return election_leader_heartbeat, election_timeout, election_type
+        return election_leader_heartbeat, election_timeout, election_follower_heartbeat_timeout, election_type, follower_list
 
     try:
         dict_obj = json.loads(message)
 
         logging.debug('Handle Election Channel: {}'.format(dict_obj))
 
-        input_type = dict_obj.get('type')
-        input_power = dict_obj.get('power')
+        input_type = dict_obj.get(KEY_FOLLOWER_INFO_TYPE)
+        input_power = dict_obj.get(KEY_FOLLOWER_INFO_POWER)
         current_power = get_bot_power_for_election()
 
         if input_type == ELECTION_MSG_ELECTION:
@@ -271,6 +289,7 @@ def handle_election(slack_client, rtm_ret, election_leader_heartbeat, election_t
                 election_type = ELECTION_BOT_FOLLOWER
                 election_leader_heartbeat = ELECTION_LEADER_HEARTBEAT
                 election_timeout = ELECTION_TIMEOUT + random.randint(0, ELECTION_TIMEOUT_RANDOM_OFFSET)
+                election_follower_heartbeat_timeout = ELECTION_SHORT_TIMEOUT + random.randint(ELECTION_SHORT_TIMEOUT, ELECTION_SHORT_TIMEOUT * 2)
             else:
                 # if get the same power, skip
                 pass
@@ -296,19 +315,34 @@ def handle_election(slack_client, rtm_ret, election_leader_heartbeat, election_t
                 election_leader_heartbeat = ELECTION_LEADER_HEARTBEAT
                 election_timeout = ELECTION_TIMEOUT + random.randint(0, ELECTION_TIMEOUT_RANDOM_OFFSET)
 
+        elif input_type == ELECTION_MSG_FOLLOWER_HEARTBEAT:
+            if election_type == ELECTION_BOT_LEADER:
+                # when getting Follower Heartbeat, update follower list
+                hostname = dict_obj.get(KEY_FOLLOWER_INFO_HOSTNAME)
+                ip_addr = dict_obj.get(KEY_FOLLOWER_INFO_IP)
+                pid = dict_obj.get(KEY_FOLLOWER_INFO_PID)
+                ts = dict_obj.get(KEY_FOLLOWER_INFO_TIMESTAMP)
+                follower_list['{hn}/{ip}'.format(hn=hostname, ip=ip_addr)] = {
+                    KEY_FOLLOWER_INFO_HOSTNAME: hostname,
+                    KEY_FOLLOWER_INFO_IP: ip_addr,
+                    KEY_FOLLOWER_INFO_PID: pid,
+                    KEY_FOLLOWER_INFO_TIMESTAMP: ts
+                }
+
     except Exception as e:
         logging.error(e)
 
-    return election_leader_heartbeat, election_timeout, election_type
+    return election_leader_heartbeat, election_timeout, election_follower_heartbeat_timeout, election_type, follower_list
 
 
-def handle_election_counter(slack_client, election_leader_heartbeat, election_timeout, election_type,
-                            bot_election_channel_obj):
+def handle_election_counter(slack_client, election_leader_heartbeat, election_timeout, election_follower_heartbeat_timeout,
+                            election_type, bot_election_channel_obj):
     """
     Handle the Bot Election counter.
     @param slack_client:
     @param election_leader_heartbeat: Leader heartbeat counter
     @param election_timeout: Election timeout counter
+    @param election_follower_heartbeat_timeout: Election timeout counter
     @param election_type: Election Type. 'FOLLOWER', 'CANDIDATE', or 'LEADER'
     @param bot_election_channel_obj:
     @return: election_leader_heartbeat, election_timeout, election_type
@@ -324,11 +358,17 @@ def handle_election_counter(slack_client, election_leader_heartbeat, election_ti
     elif election_type == ELECTION_BOT_FOLLOWER:
         # Follower will wait HeartBeat or Election, send election when election_timeout less than 0.
         election_timeout -= 1
+        election_follower_heartbeat_timeout -= 1
         if election_timeout <= 0:
             election_type = ELECTION_BOT_CANDIDATE
             election_timeout = ELECTION_SHORT_TIMEOUT
+            election_follower_heartbeat_timeout = ELECTION_FOLLOWER_HEARTBEAT + random.randint(-60, 60)
             # send election
             send_election(slack_client, ELECTION_MSG_ELECTION, bot_election_channel_obj)
+        # Follower will send follower heartbeat to leader
+        if election_follower_heartbeat_timeout <= 0:
+            election_follower_heartbeat_timeout = ELECTION_FOLLOWER_HEARTBEAT
+            send_election(slack_client, ELECTION_MSG_FOLLOWER_HEARTBEAT, bot_election_channel_obj)
 
     elif election_type == ELECTION_BOT_CANDIDATE:
         # Candidate will wait election_timeout to 0, become Leader if there is no other candidates.
@@ -341,7 +381,7 @@ def handle_election_counter(slack_client, election_leader_heartbeat, election_ti
             # send heartbeat
             send_election(slack_client, ELECTION_MSG_HEARTBEAT, bot_election_channel_obj)
 
-    return election_leader_heartbeat, election_timeout, election_type
+    return election_leader_heartbeat, election_timeout, election_follower_heartbeat_timeout, election_type
 
 
 def send_election(slack_client, message_type, bot_election_channel_obj):
@@ -354,11 +394,13 @@ def send_election(slack_client, message_type, bot_election_channel_obj):
     now = datetime.now()
     now_string = now.strftime('%Y-%m-%d_%H:%M:%S.%f')
     message = {
-        'type': message_type,
-        'ip': get_current_ip(),
-        'pid': os.getpid(),
-        'power': get_bot_power_for_election(),
-        'time': now_string
+        KEY_FOLLOWER_INFO_TYPE: message_type,
+        KEY_FOLLOWER_INFO_HOSTNAME: get_current_hostname(),
+        KEY_FOLLOWER_INFO_IP: get_current_ip(),
+        KEY_FOLLOWER_INFO_PID: os.getpid(),
+        KEY_FOLLOWER_INFO_POWER: get_bot_power_for_election(),
+        KEY_FOLLOWER_INFO_TIME: now_string,
+        KEY_FOLLOWER_INFO_TIMESTAMP: time.time()
     }
     send(slack_client, message, bot_election_channel_obj)
 
@@ -397,7 +439,8 @@ def get_bot_power_for_election():
     return int('{}{}'.format(ip_2_int(ip), pid))
 
 
-def handle_rtm(slack_client, rtm_ret, configs, cmd_config, election_type, bot_user_obj, bot_mgt_channel_obj, queue_mapping, sending_queue):
+def handle_rtm(slack_client, rtm_ret, configs, cmd_config, election_type, bot_user_obj, bot_mgt_channel_obj,
+               queue_mapping, sending_queue, follower_list):
     """
     Handle Slack RTM message.
     Ref: https://api.slack.com/rtm
@@ -410,6 +453,7 @@ def handle_rtm(slack_client, rtm_ret, configs, cmd_config, election_type, bot_us
     @param bot_mgt_channel_obj:
     @param queue_mapping:
     @param sending_queue:
+    @param follower_list:
     @return:
     """
     EVENT_TYPES_HANDLERS = {
@@ -419,11 +463,13 @@ def handle_rtm(slack_client, rtm_ret, configs, cmd_config, election_type, bot_us
     evt_type = rtm_ret.get('type')
     for evt in EVENT_TYPES_HANDLERS.keys():
         if evt == evt_type:
-            return EVENT_TYPES_HANDLERS[evt](slack_client, rtm_ret, configs, cmd_config, election_type, bot_user_obj, bot_mgt_channel_obj, queue_mapping, sending_queue)
+            return EVENT_TYPES_HANDLERS[evt](slack_client, rtm_ret, configs, cmd_config, election_type, bot_user_obj,
+                                             bot_mgt_channel_obj, queue_mapping, sending_queue, follower_list)
     return False
 
 
-def handle_rtm_message(slack_client, rtm_ret, configs, cmd_config, election_type, bot_user_obj, bot_mgt_channel_obj, queue_mapping, sending_queue):
+def handle_rtm_message(slack_client, rtm_ret, configs, cmd_config, election_type, bot_user_obj,
+                       bot_mgt_channel_obj, queue_mapping, sending_queue, follower_list):
     """
     Handle Slack RTM message which type is "message".
     @param slack_client:
@@ -434,12 +480,15 @@ def handle_rtm_message(slack_client, rtm_ret, configs, cmd_config, election_type
     @param bot_user_obj:
     @param bot_mgt_channel_obj:
     @param queue_mapping:
+    @param sending_queue:
+    @param follower_list:
     @return:
     """
     bot_id = bot_user_obj.id
 
     LEADER_CMD_HANDLERS = {
-        'help': handle_rtm_message_leader_help
+        'help': handle_rtm_message_leader_help,
+        'list-agents': handle_rtm_message_leader_list_agents
     }
 
     COMMAND_TASK_KEY_OBJECT = 'cmd_obj'
@@ -489,7 +538,9 @@ def handle_rtm_message(slack_client, rtm_ret, configs, cmd_config, election_type
             for word in word_list:
                 for leader_cmd in LEADER_CMD_HANDLERS.keys():
                     if word == leader_cmd:
-                        return LEADER_CMD_HANDLERS[leader_cmd](slack_client, rtm_ret, configs, cmd_config, election_type, bot_user_obj, bot_mgt_channel_obj, LEADER_CMD_HANDLERS.keys())
+                        return LEADER_CMD_HANDLERS[leader_cmd](slack_client, rtm_ret, configs, cmd_config,
+                                                               election_type, bot_user_obj, bot_mgt_channel_obj,
+                                                               follower_list, LEADER_CMD_HANDLERS.keys())
 
         """
         Handle each agents commands
@@ -578,7 +629,8 @@ def handle_rtm_message(slack_client, rtm_ret, configs, cmd_config, election_type
                     return send(slack_client, ret_message, bot_mgt_channel_obj)
 
 
-def handle_rtm_message_leader_help(slack_client, rtm_ret, configs, cmd_config, election_type, bot_user_obj, bot_mgt_channel_obj, leader_cmd_list):
+def handle_rtm_message_leader_help(slack_client, rtm_ret, configs, cmd_config, election_type, bot_user_obj,
+                                   bot_mgt_channel_obj, follower_list, leader_cmd_list):
     """
     Leader will handle the RTM help message, show usage.
     Will be register in LEADER_CMD_HANDLERS.
@@ -589,6 +641,8 @@ def handle_rtm_message_leader_help(slack_client, rtm_ret, configs, cmd_config, e
     @param election_type:
     @param bot_user_obj:
     @param bot_mgt_channel_obj:
+    @param follower_list:
+    @param leader_cmd_list:
     @return:
     """
     cmd_settings = cmd_config.get('cmd-settings')
@@ -633,6 +687,49 @@ def handle_rtm_message_leader_help(slack_client, rtm_ret, configs, cmd_config, e
             help_message += '    *{cmd}*\t{desc}\n'.format(cmd=cmd_name, desc=async_commands.get(cmd_name))
 
     send(slack_client, help_message, bot_mgt_channel_obj)
+
+
+def handle_rtm_message_leader_list_agents(slack_client, rtm_ret, configs, cmd_config, election_type, bot_user_obj,
+                                   bot_mgt_channel_obj, follower_list, leader_cmd_list):
+    """
+    Leader will handle the RTM help message, show usage.
+    Will be register in LEADER_CMD_HANDLERS.
+    @param slack_client:
+    @param rtm_ret:
+    @param configs:
+    @param cmd_config:
+    @param election_type:
+    @param bot_user_obj:
+    @param bot_mgt_channel_obj:
+    @param follower_list:
+    @param leader_cmd_list:
+    """
+    KEY_FOLLOWER_INFO_HOSTNAME = 'hostname'
+    KEY_FOLLOWER_INFO_IP = 'ip'
+    KEY_FOLLOWER_INFO_PID = 'pid'
+    KEY_FOLLOWER_INFO_TIMESTAMP = 'ts'
+
+    current_time = int(time.time())
+
+    msg = '*[Current Agents]*\n'
+    msg += '{hn}/{ip}, PID {pid}, Leader\n'.format(hn=get_current_hostname(),
+                                                    ip=get_current_ip(),
+                                                    pid=os.getpid())
+
+    for agent_key, agent_object in sorted(follower_list.items()):
+
+        hn = agent_object.get(KEY_FOLLOWER_INFO_HOSTNAME, 'NA')
+        ip_addr = agent_object.get(KEY_FOLLOWER_INFO_IP, 'NA')
+        pid = agent_object.get(KEY_FOLLOWER_INFO_PID, 'NA')
+        ts = agent_object.get(KEY_FOLLOWER_INFO_TIMESTAMP, 0)
+        sec = '{}s ago'.format(int(current_time - ts)) if ts else 'unknow'
+
+        msg += '{hn}/{ip}, PID {pid}, {sec}\n'.format(hn=hn,
+                                                        ip=ip_addr,
+                                                        pid=pid,
+                                                        sec=sec)
+
+    send(slack_client, msg, bot_mgt_channel_obj)
 
 
 def handle_rtm_message_agent_fail(slack_client, ret_agent_message, origin_input_message, bot_mgt_channel_obj):
