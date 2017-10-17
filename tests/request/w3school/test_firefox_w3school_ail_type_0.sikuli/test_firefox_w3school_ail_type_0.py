@@ -69,6 +69,6 @@ class Case(basecase.SikuliInputLatencyCase):
         # Write the snapshot image
         shutil.move(screenshot, sample1_file_path)
 
-    case = Case(sys.argv)
-    case.run()
+case = Case(sys.argv)
+case.run()
 
