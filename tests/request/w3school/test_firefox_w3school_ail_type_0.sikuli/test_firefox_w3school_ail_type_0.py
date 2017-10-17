@@ -42,7 +42,6 @@ class Case(basecase.SikuliInputLatencyCase):
         sleep(2)
 
         # PRE ACTIONS
-        app.focus_content()
         sleep(1)
 
         # Customized Region
