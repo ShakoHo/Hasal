@@ -3,10 +3,11 @@
 
 INPUT_LIB_PATH = sys.argv[1]
 sys.path.append(INPUT_LIB_PATH)
-
 import os
+import common
 import basecase
 import w3school
+
 import shutil
 import browser
 import time
